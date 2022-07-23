@@ -36,6 +36,26 @@ For more information on how zarf works under the hood visit our [Nerd Notes page
 - ♻️ **Declarative Deployments.**
 - 🦖 **Inherit Legacy Code**
 
+## Features
+
+📦 Out of the Box Features
+
+- Automates SBOM Generation
+- UI Dashboard for SBOM Enabled Vulnerability Visualization
+- Injector Spins Up cluster
+- Includes K3s for deploying clusters\* (Linux Only)
+- Deploy an already built tar.zst package onto a machine or server, specifically into a k8s cluster.
+- Built in Logging
+- Seed Git Registry
+- Update pod's ImagePullSecrets via a mutating webhook so the deployed resources use the NodePort binding. See Zarf Agent.
+- K9 Dashboard for visualizing containers and clusters
+
+🛠️ Configurable Features
+
+- Manage CPU usage
+- Mount onto existing cluster
+- Customize init packages
+
 ## Quick Start
 
 :::info
@@ -75,4 +95,3 @@ Coming Soon!
 
 </TabItem>
 </Tabs>
-
