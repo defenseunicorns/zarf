@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/defenseunicorns/zarf/src/types"
+	"github.com/pterm/pterm"
 
 	"github.com/defenseunicorns/zarf/src/internal/message"
 	"github.com/defenseunicorns/zarf/src/internal/utils"
@@ -67,6 +69,8 @@ var (
 	state  types.ZarfState
 
 	SGetPublicKey string
+
+	VariableMap map[string]string
 )
 
 func IsZarfInitConfig() bool {
@@ -202,10 +206,54 @@ func LoadConfig(path string, filterByOS bool) error {
 	return nil
 }
 
+// SetActiveVariables handles setting the active variables and reloading the base template
+func SetActiveVariables(path string, promptVariables bool) error {
+	VariableMap = CommonOptions.SetVariables
+
+	for _, variable := range active.Variables {
+		if _, present := VariableMap[variable.Name]; !present {
+			if variable.Prompt && promptVariables && !CommonOptions.Confirm {
+				if val, err := promptVariable(variable); err == nil {
+					VariableMap[variable.Name] = val
+				} else {
+					return err
+				}
+			} else if variable.Default != nil {
+				VariableMap[variable.Name] = *variable.Default
+			} else if variable.Prompt && promptVariables {
+				return fmt.Errorf("variable '%s' must be '--set' when using the '--confirm' flag", variable.Name)
+			}
+		}
+	}
+
+	templateMap := map[string]string{}
+	for key, value := range VariableMap {
+		// Variable keys are always uppercase in the format ###ZARF_VAR_KEY###
+		templateMap[strings.ToUpper(fmt.Sprintf("###ZARF_VAR_%s###", key))] = value
+	}
+
+	return utils.ReloadYamlTemplate(path, &active, templateMap)
+}
+
 func GetActiveConfig() types.ZarfPackage {
 	return active
 }
 
+// InjectImportedVariable determines if an imported package variable exists in the active config and adds it if not
+func InjectImportedVariable(importedVariable types.ZarfPackageVariable) {
+	presentInActive := false
+	for _, configVariable := range active.Variables {
+		if configVariable.Name == importedVariable.Name {
+			presentInActive = true
+		}
+	}
+
+	if !presentInActive {
+		active.Variables = append(active.Variables, importedVariable)
+	}
+}
+
+// BuildConfig adds build information and writes the config to the given path
 func BuildConfig(path string) error {
 	message.Debugf("config.BuildConfig(%s)", path)
 	now := time.Now()
@@ -275,4 +323,24 @@ func isCompatibleComponent(component types.ZarfComponent, filterByOS bool) bool 
 	}
 
 	return validArch && validOS
+}
+
+func promptVariable(variable types.ZarfPackageVariable) (string, error) {
+	var value string
+
+	pterm.Println()
+
+	prompt := &survey.Input{
+		Message: "Please provide a value for '" + variable.Name + "'",
+	}
+
+	if variable.Default != nil {
+		prompt.Default = *variable.Default
+	}
+
+	if err := survey.AskOne(prompt, &value); err != nil {
+		return "", err
+	}
+
+	return value, nil
 }

@@ -89,7 +89,9 @@ build-examples:
 
 	@test -s ./build/zarf-package-component-choice-$(ARCH).tar.zst || $(ZARF_BIN) package create examples/component-choice -o build -a $(ARCH) --confirm
 
-	@test -s ./build/zarf-package-component-variables-$(ARCH).tar.zst || $(ZARF_BIN) package create examples/component-variables -o build -a $(ARCH) --confirm
+	@test -s ./build/zarf-package-package-variables-$(ARCH).tar.zst || $(ZARF_BIN) package create examples/package-variables -o build -a $(ARCH) --confirm
+
+	@test -s ./build/zarf-package-composable-package-variables-$(ARCH).tar.zst || $(ZARF_BIN) package create examples/composable-package-variables -o build -a $(ARCH) --confirm
 
 	@test -s ./build/zarf-package-data-injection-demo-$(ARCH).tar || $(ZARF_BIN) package create examples/data-injection -o build -a $(ARCH) --confirm
 
@@ -104,5 +106,5 @@ build-examples:
 ## Run e2e tests. Will automatically build any required dependencies that aren't present. 
 ## Requires an existing cluster for the env var APPLIANCE_MODE=true
 .PHONY: test-e2e
-test-e2e: init-package build-examples 
+test-e2e: init-package build-examples
 	cd src/test/e2e && go test -failfast -v -timeout 30m
