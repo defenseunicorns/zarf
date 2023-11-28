@@ -32,7 +32,7 @@ $ zarf init --components=git-server
 $ zarf init --components=git-server,logging
 
 # Initializing w/ an internal registry but with a different nodeport:
-$ zarf init --nodeport=30333
+$ zarf init --set REGISTRY_NODEPORT=30333
 
 # Initializing w/ an external registry:
 $ zarf init --registry-push-password={PASSWORD} --registry-push-username={USERNAME} --registry-url={URL}
@@ -61,7 +61,6 @@ $ zarf init --artifact-push-password={PASSWORD} --artifact-push-username={USERNA
       --git-push-username string        Username to access to the git server Zarf is configured to use. User must be able to create repositories via 'git push' (default "zarf-git-user")
       --git-url string                  External git server url to use for this Zarf cluster
   -h, --help                            help for init
-      --nodeport int                    Nodeport to access a registry internal to the k8s cluster. Between [30000-32767]
       --registry-pull-password string   Password for the pull-only user to access the registry
       --registry-pull-username string   Username for pull-only access to the registry
       --registry-push-password string   Password for the push-user to connect to the registry
@@ -69,7 +68,6 @@ $ zarf init --artifact-push-password={PASSWORD} --artifact-push-username={USERNA
       --registry-secret string          Registry secret value
       --registry-url string             External registry url address to use for this Zarf cluster
       --set stringToString              Specify deployment variables to set on the command line (KEY=value) (default [])
-      --storage-class string            Specify the storage class to use for the registry and git server.  E.g. --storage-class=standard
 ```
 
 ## Options inherited from parent commands

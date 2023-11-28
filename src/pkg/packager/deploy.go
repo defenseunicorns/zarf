@@ -189,7 +189,6 @@ func (p *Packager) deployComponents() (deployedComponents []types.DeployedCompon
 }
 
 func (p *Packager) deployInitComponent(component types.ZarfComponent) (charts []types.InstalledChart, err error) {
-	hasExternalRegistry := p.cfg.InitOpts.RegistryInfo.Address != ""
 	isSeedRegistry := component.Name == "zarf-seed-registry"
 	isRegistry := component.Name == "zarf-registry"
 	isInjector := component.Name == "zarf-injector"
@@ -203,7 +202,7 @@ func (p *Packager) deployInitComponent(component types.ZarfComponent) (charts []
 		}
 	}
 
-	if hasExternalRegistry && (isSeedRegistry || isInjector || isRegistry) {
+	if !p.cfg.InitOpts.RegistryInfo.InternalRegistry && (isSeedRegistry || isInjector || isRegistry) {
 		message.Notef("Not deploying the component (%s) since external registry information was provided during `zarf init`", component.Name)
 		return charts, nil
 	}
@@ -216,6 +215,18 @@ func (p *Packager) deployInitComponent(component types.ZarfComponent) (charts []
 	// Before deploying the seed registry, start the injector
 	if isSeedRegistry {
 		p.cluster.StartInjectionMadness(p.layout.Base, p.layout.Images.Base, component.Images)
+
+		// Retrieve the default storage class from the cluster, it will be the default
+		if p.cfg.PkgOpts.SetVariables == nil {
+			p.cfg.PkgOpts.SetVariables = map[string]string{}
+		}
+		if c := p.cfg.PkgOpts.SetVariables["REGISTRY_STORAGE_CLASS"]; c == "" {
+			p.cfg.PkgOpts.SetVariables["REGISTRY_STORAGE_CLASS"], err = p.cluster.GetDefaultStorageClass()
+		}
+
+		if err != nil {
+			message.WarnErr(err, "Unable to get the default storage class from the cluster")
+		}
 	}
 
 	charts, err = p.deployComponent(component, isAgent /* skip img checksum if isAgent */, isSeedRegistry /* skip image push if isSeedRegistry */)

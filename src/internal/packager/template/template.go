@@ -85,12 +85,18 @@ func (values *Values) GetVariables(component types.ZarfComponent) (templateMap m
 		regInfo := values.config.State.RegistryInfo
 		gitInfo := values.config.State.GitServer
 
-		builtinMap := map[string]string{
-			"STORAGE_CLASS": values.config.State.StorageClass,
+		if values.config.SetVariableMap != nil {
+			if regInfo.NodePort > 0 && values.config.SetVariableMap["REGISTRY_NODEPORT"] != nil {
+				values.config.SetVariableMap["REGISTRY_NODEPORT"].Value = fmt.Sprintf("%d", regInfo.NodePort)
+			}
+			if values.config.State.StorageClass != "" && values.config.SetVariableMap["REGISTRY_STORAGE_CLASS"] != nil {
+				values.config.SetVariableMap["REGISTRY_STORAGE_CLASS"].Value = values.config.State.StorageClass
+			}
+		}
 
+		builtinMap := map[string]string{
 			// Registry info
 			"REGISTRY":           values.registry,
-			"NODEPORT":           fmt.Sprintf("%d", regInfo.NodePort),
 			"REGISTRY_AUTH_PUSH": regInfo.PushPassword,
 			"REGISTRY_AUTH_PULL": regInfo.PullPassword,
 
