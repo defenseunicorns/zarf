@@ -27,6 +27,7 @@ const (
 	VZarfCache    = "zarf_cache"
 	VTmpDir       = "tmp_dir"
 	VInsecure     = "insecure"
+	VConfigFile   = "config_file"
 
 	// Init config keys
 

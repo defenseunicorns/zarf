@@ -33,6 +33,7 @@ type ZarfCommonOptions struct {
 	CachePath      string `json:"cachePath" jsonschema:"description=Path to use to cache images and git repos on package create"`
 	TempDirectory  string `json:"tempDirectory" jsonschema:"description=Location Zarf should use as a staging ground when managing files and images for package creation and deployment"`
 	OCIConcurrency int    `jsonschema:"description=Number of concurrent layer operations to perform when interacting with a remote package"`
+	Config         string `json:"configFile" jsonschema:"description=Location of the Zarf configuration file"`
 }
 
 // ZarfPackageOptions tracks the user-defined preferences during common package operations.
