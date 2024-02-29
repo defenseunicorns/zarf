@@ -13,29 +13,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	packagePath    = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
-	dir            = "examples/config-file"
-	zarfConfigFile = "zarf-config.toml"
-	configPath     = filepath.Join(dir, zarfConfigFile)
-)
-
 func TestConfigFile(t *testing.T) {
 	t.Log("E2E: Config file")
 	e2e.SetupWithCluster(t)
+	var (
+		packagePath    = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
+		dir            = "examples/config-file"
+		zarfConfigFile = "zarf-config.toml"
+		configPath     = filepath.Join(dir, zarfConfigFile)
+	)
 	e2e.CleanFiles(packagePath)
 
-	//// Test the config file environment variable
-	//os.Setenv("ZARF_CONFIG", configPath)
-	//configFileTests(t, dir, path)
-	//os.Unsetenv("ZARF_CONFIG")
+	// Test the config file environment variable
+	os.Setenv("ZARF_CONFIG", configPath)
+	configFileTests(t, dir, packagePath)
+	os.Unsetenv("ZARF_CONFIG")
 
-	configFileTestsWithFlag(t, dir, packagePath)
+	configFileTestsWithFlag(t, dir, packagePath, configPath)
 
-	//configFileDefaultTests(t)
-	//
-	//stdOut, stdErr, err := e2e.Zarf("package", "remove", path, "--confirm")
-	//require.NoError(t, err, stdOut, stdErr)
+	configFileDefaultTests(t)
+
+	stdOut, stdErr, err := e2e.Zarf("package", "remove", packagePath, "--confirm")
+	require.NoError(t, err, stdOut, stdErr)
 
 	e2e.CleanFiles(packagePath)
 }
@@ -167,13 +166,13 @@ func configFileDefaultTests(t *testing.T) {
 	os.Unsetenv("ZARF_CONFIG")
 }
 
-func configFileTestsWithFlag(t *testing.T, dir, path string) {
-	_, stdErr, err := e2e.Zarf("package", "create", dir, "--confirm", "--config-path", configPath)
+func configFileTestsWithFlag(t *testing.T, dir, path, configPath string) {
+	_, stdErr, err := e2e.Zarf("package", "create", dir, "--config-path", configPath, "--confirm")
 	require.NoError(t, err)
 	require.Contains(t, string(stdErr), "This is a zebra and they have stripes")
 	require.Contains(t, string(stdErr), "This is a leopard and they have spots")
 
-	_, stdErr, err = e2e.Zarf("package", "deploy", path, "--confirm", "--config-path", configPath)
+	_, stdErr, err = e2e.Zarf("package", "deploy", path, "--config-path", configPath, "--confirm")
 	require.NoError(t, err)
 	require.Contains(t, string(stdErr), "📦 LION COMPONENT")
 	require.NotContains(t, string(stdErr), "📦 LEOPARD COMPONENT")

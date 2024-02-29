@@ -73,7 +73,6 @@ func init() {
 	}
 
 	v := common.InitViper()
-	v.SetConfigFile(config.CommonOptions.ConfigPath)
 
 	rootCmd.PersistentFlags().StringVarP(&common.LogLevelCLI, "log-level", "l", v.GetString(common.VLogLevel), lang.RootCmdFlagLogLevel)
 	rootCmd.PersistentFlags().StringVarP(&config.CLIArch, "architecture", "a", v.GetString(common.VArchitecture), lang.RootCmdFlagArch)
