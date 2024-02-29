@@ -27,7 +27,7 @@ const (
 	VZarfCache    = "zarf_cache"
 	VTmpDir       = "tmp_dir"
 	VInsecure     = "insecure"
-	VConfigFile   = "config_file"
+	VConfigPath   = "config_path"
 
 	// Init config keys
 
@@ -169,7 +169,7 @@ func printViperConfigUsed() {
 
 	// Optional, so ignore file not found errors
 	if vConfigError != nil {
-		// Config file not found; ignore
+		// ConfigPath file not found; ignore
 		if _, ok := vConfigError.(viper.ConfigFileNotFoundError); !ok {
 			message.WarnErrf(vConfigError, lang.CmdViperErrLoadingConfigFile, vConfigError.Error())
 		}

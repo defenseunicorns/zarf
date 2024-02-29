@@ -73,6 +73,7 @@ func init() {
 	}
 
 	v := common.InitViper()
+	v.SetConfigFile(config.CommonOptions.ConfigPath)
 
 	rootCmd.PersistentFlags().StringVarP(&common.LogLevelCLI, "log-level", "l", v.GetString(common.VLogLevel), lang.RootCmdFlagLogLevel)
 	rootCmd.PersistentFlags().StringVarP(&config.CLIArch, "architecture", "a", v.GetString(common.VArchitecture), lang.RootCmdFlagArch)
@@ -82,5 +83,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.CachePath, "zarf-cache", v.GetString(common.VZarfCache), lang.RootCmdFlagCachePath)
 	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.TempDirectory, "tmpdir", v.GetString(common.VTmpDir), lang.RootCmdFlagTempDir)
 	rootCmd.PersistentFlags().BoolVar(&config.CommonOptions.Insecure, "insecure", v.GetBool(common.VInsecure), lang.RootCmdFlagInsecure)
-	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.Config, "config", v.GetString(common.VConfigFile), lang.RootCmdFlagConfigFile)
+	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.ConfigPath, "config-path", v.GetString(common.VConfigPath), lang.RootCmdFlagConfigPath)
 }
