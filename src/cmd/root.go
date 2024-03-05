@@ -82,5 +82,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.CachePath, "zarf-cache", v.GetString(common.VZarfCache), lang.RootCmdFlagCachePath)
 	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.TempDirectory, "tmpdir", v.GetString(common.VTmpDir), lang.RootCmdFlagTempDir)
 	rootCmd.PersistentFlags().BoolVar(&config.CommonOptions.Insecure, "insecure", v.GetBool(common.VInsecure), lang.RootCmdFlagInsecure)
-	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.ConfigPath, "config-path", v.GetString(common.VConfigPath), lang.RootCmdFlagConfigPath)
+	rootCmd.PersistentFlags().StringVar(&config.CommonOptions.ConfigPath, "config-path", "", lang.RootCmdFlagConfigPath)
 }
