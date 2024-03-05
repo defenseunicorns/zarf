@@ -24,19 +24,19 @@ func TestConfigFile(t *testing.T) {
 
 	e2e.CleanFiles(path)
 
-	//// Test the config file environment variable
-	//os.Setenv("ZARF_CONFIG", filepath.Join(dir, config))
-	//configFileTests(t, dir, path)
-	//os.Unsetenv("ZARF_CONFIG")
-	// test the config file flag
+	// Test the config file environment variable
+	os.Setenv("ZARF_CONFIG", filepath.Join(dir, config))
+	configFileTests(t, dir, path)
+	os.Unsetenv("ZARF_CONFIG")
+	// Test the config file flag --config-path
 	configFileTestsWithFlag(t, dir, path, filepath.Join(dir, config))
 
-	//configFileDefaultTests(t)
-	//
-	//stdOut, stdErr, err := e2e.Zarf("package", "remove", packagePath, "--confirm")
-	//require.NoError(t, err, stdOut, stdErr)
-	//
-	//e2e.CleanFiles(packagePath)
+	configFileDefaultTests(t)
+
+	stdOut, stdErr, err := e2e.Zarf("package", "remove", path, "--confirm")
+	require.NoError(t, err, stdOut, stdErr)
+
+	e2e.CleanFiles(path)
 }
 
 func configFileTests(t *testing.T, dir, path string) {
