@@ -150,6 +150,13 @@ func InitViper() *viper.Viper {
 	return v
 }
 
+func SetViperConfigFilePath(vcfgFilePath string) {
+	if vcfgFilePath != "" {
+		v.SetConfigFile(config.CommonOptions.ConfigPath)
+		vConfigError = v.ReadInConfig()
+	}
+}
+
 // GetViper returns the viper singleton
 func GetViper() *viper.Viper {
 	return v
