@@ -176,7 +176,7 @@ func printViperConfigUsed() {
 
 	// Optional, so ignore file not found errors
 	if vConfigError != nil {
-		// ConfigPath file not found; ignore
+		// Config file not found; ignore
 		if _, ok := vConfigError.(viper.ConfigFileNotFoundError); !ok {
 			message.WarnErrf(vConfigError, lang.CmdViperErrLoadingConfigFile, vConfigError.Error())
 		}
