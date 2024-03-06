@@ -7,6 +7,7 @@ package lint
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
@@ -21,6 +22,16 @@ const (
 	categoryWarning category = 2
 )
 
+type validatorVar struct {
+	// The format of the name will be VAR_NAME not ###ZARF_VAR_VAR_NAME###
+	name             string
+	relativePath     string
+	declaredByUser   bool
+	usedByPackage    bool
+	declaredByImport bool
+}
+
+// TODO separate this out into it's own file
 type validatorMessage struct {
 	yqPath         string
 	description    string
@@ -53,6 +64,7 @@ type Validator struct {
 	typedZarfPackage   types.ZarfPackage
 	untypedZarfPackage interface{}
 	baseDir            string
+	pkgVars            []validatorVar
 }
 
 // DisplayFormattedMessage message sent to user based on validator results
@@ -148,4 +160,32 @@ func (v *Validator) addWarning(vmessage validatorMessage) {
 func (v *Validator) addError(vMessage validatorMessage) {
 	vMessage.category = categoryError
 	v.findings = helpers.Unique(append(v.findings, vMessage))
+}
+
+func getVariableNameFromZarfVar(zarfVar string) string {
+	zarfVar = strings.TrimPrefix(zarfVar, "###ZARF_VAR_")
+	zarfVar = strings.TrimPrefix(zarfVar, "###ZARF_CONST_")
+	return strings.TrimSuffix(zarfVar, "###")
+}
+
+func (v *Validator) addUnusedVariableErrors() {
+	for _, unusedVariable := range v.pkgVars {
+		if unusedVariable.declaredByImport {
+			continue
+		}
+		if !unusedVariable.declaredByUser {
+			v.addError(validatorMessage{
+				description:    fmt.Sprintf("Variable not declared %q", getVariableNameFromZarfVar(unusedVariable.name)),
+				packageRelPath: unusedVariable.relativePath,
+				packageName:    v.typedZarfPackage.Metadata.Name,
+			})
+		}
+		if !unusedVariable.usedByPackage {
+			v.addError(validatorMessage{
+				description:    fmt.Sprintf("Unused variable %q", getVariableNameFromZarfVar(unusedVariable.name)),
+				packageRelPath: unusedVariable.relativePath,
+				packageName:    v.typedZarfPackage.Metadata.Name,
+			})
+		}
+	}
 }

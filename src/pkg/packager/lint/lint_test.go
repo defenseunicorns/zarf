@@ -172,6 +172,42 @@ func TestValidateSchema(t *testing.T) {
 		require.Equal(t, input, actual)
 	})
 
+	t.Run("variable is found and marked usedinPackage", func(t *testing.T) {
+		fakeVar := validatorVar{name: "NAME", relativePath: ".", declaredByUser: true, usedByPackage: false}
+		validator := Validator{pkgVars: []validatorVar{fakeVar}}
+		line := "Hello my name is ###ZARF_VAR_NAME###"
+		findVarsInLine(&validator, line, ".")
+		nameVar := validatorVar{name: "NAME", relativePath: ".", declaredByUser: true, usedByPackage: true}
+		require.Len(t, validator.pkgVars, 1)
+		require.Contains(t, validator.pkgVars, nameVar)
+	})
+
+	t.Run("variable is used and package and added to list", func(t *testing.T) {
+		validator := Validator{}
+		line := "deprecated ###ZARF_DATA_INJECTON_MARKER###"
+		findVarsInLine(&validator, line, ".")
+		require.Len(t, validator.findings, 1)
+	})
+
+	t.Run("deprecated variable adds warning", func(t *testing.T) {
+		validator := Validator{}
+		line := "my favorite color is ###ZARF_VAR_COLOR###"
+		findVarsInLine(&validator, line, ".")
+		colorVar := validatorVar{name: "COLOR", relativePath: ".", declaredByUser: false, usedByPackage: true}
+		require.Contains(t, validator.pkgVars, colorVar)
+	})
+
+	t.Run("Do not add the same variable from a different package", func(t *testing.T) {
+		validator := Validator{}
+		originalVar := validatorVar{name: "FAKE_VAR", relativePath: ".", declaredByUser: true, usedByPackage: false}
+		validator.addVarIfNotExists(originalVar)
+		importedVar := validatorVar{name: "FAKE_VAR", relativePath: "fake-path", declaredByUser: false, usedByPackage: false}
+		validator.addVarIfNotExists(importedVar)
+		newVarVal := validatorVar{name: "FAKE_VAR", relativePath: ".", declaredByUser: true, usedByPackage: false}
+		require.Len(t, validator.pkgVars, 1)
+		require.Contains(t, validator.pkgVars, newVarVal)
+	})
+
 	t.Run("Test composable components", func(t *testing.T) {
 		pathVar := "fake-path"
 		unpinnedImage := "unpinned:latest"
@@ -183,7 +219,8 @@ func TestValidateSchema(t *testing.T) {
 				Metadata: types.ZarfMetadata{Name: "test-zarf-package"}}}
 
 		createOpts := types.ZarfCreateOptions{Flavor: "", BaseDir: "."}
-		lintComponents(&validator, &createOpts)
+		cfg := types.PackagerConfig{CreateOpts: createOpts}
+		lintComponents(&validator, &cfg)
 		// Require.contains rather than equals since the error message changes from linux to windows
 		require.Contains(t, validator.findings[0].description, fmt.Sprintf("open %s", filepath.Join("fake-path", "zarf.yaml")))
 		require.Equal(t, ".components.[0].import.path", validator.findings[0].yqPath)

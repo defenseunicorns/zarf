@@ -17,6 +17,11 @@ import (
 	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
 )
 
+const (
+	depMarkerOld = "DATA_INJECTON_MARKER"
+	depMarkerNew = "DATA_INJECTION_MARKER"
+)
+
 // Values contains the values to be used in the template.
 type Values struct {
 	config   *types.PackagerConfig
@@ -74,12 +79,6 @@ func (values *Values) GetRegistry() string {
 // GetVariables returns the variables to be used in the template.
 func (values *Values) GetVariables(component types.ZarfComponent) (templateMap map[string]*utils.TextTemplate, deprecations map[string]string) {
 	templateMap = make(map[string]*utils.TextTemplate)
-
-	depMarkerOld := "DATA_INJECTON_MARKER"
-	depMarkerNew := "DATA_INJECTION_MARKER"
-	deprecations = map[string]string{
-		fmt.Sprintf("###ZARF_%s###", depMarkerOld): fmt.Sprintf("###ZARF_%s###", depMarkerNew),
-	}
 
 	if values.config.State != nil {
 		regInfo := values.config.State.RegistryInfo
@@ -159,6 +158,7 @@ func (values *Values) GetVariables(component types.ZarfComponent) (templateMap m
 		}
 	}
 
+	deprecations = GetTemplateDeprecations()
 	debugPrintTemplateMap(templateMap)
 	message.Debugf("deprecations = %#v", deprecations)
 
@@ -176,6 +176,14 @@ func (values *Values) Apply(component types.ZarfComponent, path string, ignoreRe
 	err := utils.ReplaceTextTemplate(path, templateMap, deprecations, "###ZARF_[A-Z0-9_]+###")
 
 	return err
+}
+
+// GetTemplateDeprecations returns a map of deprecated zarf template variables
+func GetTemplateDeprecations() map[string]string {
+	deprecations := map[string]string{
+		fmt.Sprintf("###ZARF_%s###", depMarkerOld): fmt.Sprintf("###ZARF_%s###", depMarkerNew),
+	}
+	return deprecations
 }
 
 func debugPrintTemplateMap(templateMap map[string]*utils.TextTemplate) {

@@ -3,6 +3,16 @@ metadata:
   name: lint
   description1: Testing bad yaml
 
+variables:
+  - name: VARIABLE_NOT_USED
+
+  - name: VARIABLE_USED
+    default: my-service
+
+  - name: HELM_USED
+
+  - name: HELM_NOT_USED
+
 components:
   - name: first-test-component
     import:
@@ -54,3 +64,19 @@ components:
       flavor: good-flavor
     images:
       - image-in-good-flavor-component:unpinned
+
+  - name: manifest-to-test-deploy-var-used
+    files:
+      - source: manifest.json
+        target: manifest.json
+    charts:
+      - name: podinfo
+        localPath: chart
+        version: 6.4.0
+        namespace: foo
+        valuesFiles:
+          - "values.yaml"
+    manifests:
+      - name: my-service
+        files:
+          - manifest.yaml

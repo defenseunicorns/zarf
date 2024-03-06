@@ -93,7 +93,7 @@ func New(cfg *types.PackagerConfig, mods ...Modifier) (*Packager, error) {
 	}
 
 	if cfg.SetVariableMap == nil {
-		cfg.SetVariableMap = make(map[string]*types.ZarfSetVariable)
+		cfg.SetVariableMap = make(types.ZarfSetVariableMap)
 	}
 
 	var (

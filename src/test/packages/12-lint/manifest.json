@@ -1,0 +1,5 @@
+{
+  "name": "###ZARF_VAR_VARIABLE_USED###",
+  "undeclared": "###ZARF_VAR_NOT_DECLARED###",
+  "deprecated": "###ZARF_DATA_INJECTON_MARKER###"
+}

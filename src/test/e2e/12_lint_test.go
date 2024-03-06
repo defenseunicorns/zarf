@@ -55,6 +55,14 @@ func TestLint(t *testing.T) {
 		require.Contains(t, strippedStderr, "Linting package \"dos-games\" at oci://🦄/dos-games:1.0.0")
 		require.Contains(t, strippedStderr, fmt.Sprintf("Linting package \"lint\" at %s", testPackagePath))
 
+		// Check that linting unused variabels works
+		require.Contains(t, strippedStderr, "VARIABLE_NOT_USED")
+		require.NotContains(t, strippedStderr, "VARIABLE_USED")
+
+		require.Contains(t, strippedStderr, "HELM_NOT_USED")
+		require.NotContains(t, strippedStderr, "HELM_USED")
+		require.Contains(t, strippedStderr, "HELM_NOT_DECLARED")
+
 	})
 
 }

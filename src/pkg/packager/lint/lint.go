@@ -15,8 +15,8 @@ import (
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
-	"github.com/defenseunicorns/zarf/src/pkg/packager"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/composer"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/variable"
 	"github.com/defenseunicorns/zarf/src/pkg/transform"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
@@ -33,25 +33,49 @@ func getSchemaFile() ([]byte, error) {
 
 // Validate validates a zarf file against the zarf schema, returns *validator with warnings or errors if they exist
 // along with an error if the validation itself failed
-func Validate(createOpts types.ZarfCreateOptions) (*Validator, error) {
+func Validate(cfg *types.PackagerConfig) (*Validator, error) {
 	validator := Validator{}
 	var err error
 
-	if err := utils.ReadYaml(filepath.Join(createOpts.BaseDir, layout.ZarfYAML), &validator.typedZarfPackage); err != nil {
+	if err := utils.ReadYaml(filepath.Join(cfg.CreateOpts.BaseDir, layout.ZarfYAML), &validator.typedZarfPackage); err != nil {
 		return nil, err
 	}
 
-	if err := utils.ReadYaml(filepath.Join(createOpts.BaseDir, layout.ZarfYAML), &validator.untypedZarfPackage); err != nil {
+	if err := utils.ReadYaml(filepath.Join(cfg.CreateOpts.BaseDir, layout.ZarfYAML), &validator.untypedZarfPackage); err != nil {
 		return nil, err
 	}
 
-	if err := os.Chdir(createOpts.BaseDir); err != nil {
-		return nil, fmt.Errorf("unable to access directory '%s': %w", createOpts.BaseDir, err)
+	if err := os.Chdir(cfg.CreateOpts.BaseDir); err != nil {
+		return nil, fmt.Errorf("unable to access directory '%s': %w", cfg.CreateOpts.BaseDir, err)
 	}
 
-	validator.baseDir = createOpts.BaseDir
+	if err := variable.SetVariableMapInConfig(*cfg); err != nil {
+		return nil, fmt.Errorf("unable to set the active variables: %w", err)
+	}
 
-	lintComponents(&validator, &createOpts)
+	for _, pkgVar := range validator.typedZarfPackage.Variables {
+		validator.addVarIfNotExists(validatorVar{
+			name:           pkgVar.Name,
+			relativePath:   ".",
+			declaredByUser: true,
+		})
+	}
+
+	for key := range cfg.PkgOpts.SetVariables {
+		validator.addVarIfNotExists(validatorVar{
+			name:           key,
+			relativePath:   ".",
+			declaredByUser: true,
+		})
+	}
+
+	validator.baseDir = cfg.CreateOpts.BaseDir
+
+	if err := lintComponents(&validator, cfg); err != nil {
+		return nil, err
+	}
+
+	validator.addUnusedVariableErrors()
 
 	if validator.jsonSchema, err = getSchemaFile(); err != nil {
 		return nil, err
@@ -64,15 +88,32 @@ func Validate(createOpts types.ZarfCreateOptions) (*Validator, error) {
 	return &validator, nil
 }
 
-func lintComponents(validator *Validator, createOpts *types.ZarfCreateOptions) {
+func lintComponents(validator *Validator, cfg *types.PackagerConfig) error {
 	for i, component := range validator.typedZarfPackage.Components {
 		arch := config.GetArch(validator.typedZarfPackage.Metadata.Architecture)
 
-		if !composer.CompatibleComponent(component, arch, createOpts.Flavor) {
+		if !composer.CompatibleComponent(component, arch, cfg.CreateOpts.Flavor) {
 			continue
 		}
 
-		chain, err := composer.NewImportChain(component, i, validator.typedZarfPackage.Metadata.Name, arch, createOpts.Flavor)
+		chain, err := composer.NewImportChain(component, i, validator.typedZarfPackage.Metadata.Name, arch, cfg.CreateOpts.Flavor)
+
+		importedVars := chain.MergeVariables([]types.ZarfPackageVariable{})
+		for _, importedVar := range importedVars {
+			validator.addVarIfNotExists(validatorVar{
+				name:             importedVar.Name,
+				declaredByImport: true,
+			})
+		}
+
+		importedConstants := chain.MergeConstants([]types.ZarfPackageConstant{})
+		for _, importedConst := range importedConstants {
+			validator.addVarIfNotExists(validatorVar{
+				name:             importedConst.Name,
+				declaredByImport: true,
+			})
+		}
+
 		baseComponent := chain.Head()
 
 		var badImportYqPath string
@@ -96,16 +137,30 @@ func lintComponents(validator *Validator, createOpts *types.ZarfCreateOptions) {
 		node := baseComponent
 		for node != nil {
 			checkForVarInComponentImport(validator, node)
-			fillComponentTemplate(validator, node, createOpts)
+			fillComponentTemplate(validator, node, &cfg.CreateOpts)
 			lintComponent(validator, node)
+			if err := checkForUnusedVariables(validator, node); err != nil {
+				return err
+			}
 			node = node.Next()
 		}
 	}
+	return nil
+}
+
+func reloadComponentTemplate(component *types.ZarfComponent) error {
+	mappings := map[string]string{}
+	mappings[types.ZarfComponentName] = component.Name
+	err := utils.ReloadYamlTemplate(component, mappings)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func fillComponentTemplate(validator *Validator, node *composer.Node, createOpts *types.ZarfCreateOptions) {
 
-	err := packager.ReloadComponentTemplate(&node.ZarfComponent)
+	err := reloadComponentTemplate(&node.ZarfComponent)
 	if err != nil {
 		validator.addWarning(validatorMessage{
 			description:    err.Error(),
