@@ -17,19 +17,20 @@ func TestConfigFile(t *testing.T) {
 	t.Log("E2E: Config file")
 	e2e.SetupWithCluster(t)
 	var (
-		path   = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
-		dir    = "./examples/config-file"
-		config = "zarf-config.toml"
+		path       = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
+		dir        = "./examples/config-file"
+		config     = "zarf-config.toml"
+		configPath = filepath.Join(dir, config)
 	)
 
 	e2e.CleanFiles(path)
 
 	// Test the config file environment variable
-	os.Setenv("ZARF_CONFIG", filepath.Join(dir, config))
+	os.Setenv("ZARF_CONFIG", configPath)
 	configFileTests(t, dir, path, "")
 	os.Unsetenv("ZARF_CONFIG")
 	// Test the config file flag --config-path
-	configFileTests(t, dir, path, filepath.Join(dir, config))
+	configFileTests(t, dir, path, configPath)
 
 	configFileDefaultTests(t)
 
