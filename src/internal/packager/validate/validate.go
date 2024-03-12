@@ -11,7 +11,9 @@ import (
 
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
+	"github.com/defenseunicorns/zarf/src/pkg/actions"
 	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
+	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
@@ -189,14 +191,16 @@ func validateComponent(pkg types.ZarfPackage, component types.ZarfComponent) err
 	return nil
 }
 
-func validateActionset(actions types.ZarfComponentActionSet) (bool, error) {
+func validateActionset(actionSet actions.ActionSet) (bool, error) {
 	containsVariables := false
 
-	validate := func(actions []types.ZarfComponentAction) error {
-		for _, action := range actions {
-			if cv, err := validateAction(action); err != nil {
+	validate := func(actionList []actions.Action) error {
+		for _, action := range actionList {
+			if err := action.Validate(); err != nil {
 				return err
-			} else if cv {
+			}
+
+			if len(action.SetVariables) > 0 {
 				containsVariables = true
 			}
 		}
@@ -204,48 +208,17 @@ func validateActionset(actions types.ZarfComponentActionSet) (bool, error) {
 		return nil
 	}
 
-	if err := validate(actions.Before); err != nil {
+	if err := validate(actionSet.Before); err != nil {
 		return containsVariables, err
 	}
-	if err := validate(actions.After); err != nil {
+	if err := validate(actionSet.After); err != nil {
 		return containsVariables, err
 	}
-	if err := validate(actions.OnSuccess); err != nil {
+	if err := validate(actionSet.OnSuccess); err != nil {
 		return containsVariables, err
 	}
-	if err := validate(actions.OnFailure); err != nil {
+	if err := validate(actionSet.OnFailure); err != nil {
 		return containsVariables, err
-	}
-
-	return containsVariables, nil
-}
-
-func validateAction(action types.ZarfComponentAction) (bool, error) {
-	containsVariables := false
-
-	// Validate SetVariable
-	for _, variable := range action.SetVariables {
-		if !IsUppercaseNumberUnderscore(variable.Name) {
-			return containsVariables, fmt.Errorf(lang.PkgValidateMustBeUppercase, variable.Name)
-		}
-		containsVariables = true
-	}
-
-	if action.Wait != nil {
-		// Validate only cmd or wait, not both
-		if action.Cmd != "" {
-			return containsVariables, fmt.Errorf(lang.PkgValidateErrActionCmdWait, action.Cmd)
-		}
-
-		// Validate only cluster or network, not both
-		if action.Wait.Cluster != nil && action.Wait.Network != nil {
-			return containsVariables, fmt.Errorf(lang.PkgValidateErrActionClusterNetwork)
-		}
-
-		// Validate at least one of cluster or network
-		if action.Wait.Cluster == nil && action.Wait.Network == nil {
-			return containsVariables, fmt.Errorf(lang.PkgValidateErrActionClusterNetwork)
-		}
 	}
 
 	return containsVariables, nil
@@ -279,7 +252,7 @@ func validatePackageName(subject string) error {
 	return nil
 }
 
-func validatePackageVariable(subject types.ZarfPackageVariable) error {
+func validatePackageVariable(subject variables.InteractiveVariable) error {
 	// ensure the variable name is only capitals and underscores
 	if !IsUppercaseNumberUnderscore(subject.Name) {
 		return fmt.Errorf(lang.PkgValidateMustBeUppercase, subject.Name)
@@ -288,7 +261,7 @@ func validatePackageVariable(subject types.ZarfPackageVariable) error {
 	return nil
 }
 
-func validatePackageConstant(subject types.ZarfPackageConstant) error {
+func validatePackageConstant(subject variables.Constant) error {
 	// ensure the constant name is only capitals and underscores
 	if !IsUppercaseNumberUnderscore(subject.Name) {
 		return fmt.Errorf(lang.PkgValidateErrPkgConstantName, subject.Name)

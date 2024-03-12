@@ -19,7 +19,10 @@ import (
 	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/internal/packager/sbom"
 	"github.com/defenseunicorns/zarf/src/internal/packager/template"
+	"github.com/defenseunicorns/zarf/src/pkg/actions"
 	"github.com/defenseunicorns/zarf/src/pkg/cluster"
+	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
+	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/mholt/archiver/v3"
 
@@ -35,11 +38,13 @@ import (
 // Packager is the main struct for managing packages.
 type Packager struct {
 	cfg            *types.PackagerConfig
+	actionRunner   *actions.ActionRunner
+	variableConfig *variables.VariableConfig
+	state          *types.ZarfState
 	cluster        *cluster.Cluster
 	layout         *layout.PackagePaths
 	arch           string
 	warnings       []string
-	valueTemplate  *template.Values
 	hpaModified    bool
 	connectStrings types.ConnectStrings
 	sbomViewFiles  []string
@@ -92,16 +97,14 @@ func New(cfg *types.PackagerConfig, mods ...Modifier) (*Packager, error) {
 		return nil, fmt.Errorf("no config provided")
 	}
 
-	if cfg.SetVariableMap == nil {
-		cfg.SetVariableMap = make(map[string]*types.ZarfSetVariable)
-	}
-
 	var (
 		err  error
 		pkgr = &Packager{
 			cfg: cfg,
 		}
 	)
+
+	pkgr.variableConfig = template.GetZarfVariableConfig()
 
 	if config.CommonOptions.TempDirectory != "" {
 		// If the cache directory is within the temp directory, warn the user
@@ -128,6 +131,13 @@ func New(cfg *types.PackagerConfig, mods ...Modifier) (*Packager, error) {
 			return nil, fmt.Errorf("unable to create package temp paths: %w", err)
 		}
 	}
+
+	// Setup the action config for packager
+	zarfCommand, err := utils.GetFinalExecutableCommand()
+	if err != nil {
+		return nil, err
+	}
+	pkgr.actionRunner = actions.New("zarf", zarfCommand, "zarf tools wait-for", message.Debug)
 
 	return pkgr, nil
 }
@@ -375,7 +385,7 @@ func (p *Packager) stageSBOMViewFiles() error {
 	}
 	// If SBOMs were loaded, temporarily place them in the deploy directory
 	sbomDir := p.layout.SBOMs.Path
-	if !utils.InvalidPath(sbomDir) {
+	if !helpers.InvalidPath(sbomDir) {
 		p.sbomViewFiles, _ = filepath.Glob(filepath.Join(sbomDir, "sbom-viewer-*"))
 		_, err := sbom.OutputSBOMFiles(sbomDir, layout.SBOMDir, "")
 		if err != nil {

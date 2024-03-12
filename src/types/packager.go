@@ -35,10 +35,4 @@ type PackagerConfig struct {
 
 	// The package data
 	Pkg ZarfPackage
-
-	// The active zarf state
-	State *ZarfState
-
-	// Variables set by the user
-	SetVariableMap map[string]*ZarfSetVariable
 }

@@ -124,12 +124,12 @@ func (p *Packager) removeComponent(deployedPackage *types.DeployedPackage, deplo
 
 	onRemove := c.Actions.OnRemove
 	onFailure := func() {
-		if err := p.runActions(onRemove.Defaults, onRemove.OnFailure, nil); err != nil {
+		if err := p.runActions(onRemove.Defaults, onRemove.OnFailure); err != nil {
 			message.Debugf("Unable to run the failure action: %s", err)
 		}
 	}
 
-	if err := p.runActions(onRemove.Defaults, onRemove.Before, nil); err != nil {
+	if err := p.runActions(onRemove.Defaults, onRemove.Before); err != nil {
 		onFailure()
 		return nil, fmt.Errorf("unable to run the before action for component (%s): %w", c.Name, err)
 	}
@@ -137,7 +137,7 @@ func (p *Packager) removeComponent(deployedPackage *types.DeployedPackage, deplo
 	for _, chart := range helpers.Reverse(deployedComponent.InstalledCharts) {
 		spinner.Updatef("Uninstalling chart '%s' from the '%s' component", chart.ChartName, deployedComponent.Name)
 
-		helmCfg := helm.NewClusterOnly(p.cfg, p.cluster)
+		helmCfg := helm.NewClusterOnly(p.cfg, p.variableConfig, p.state, p.cluster)
 		if err := helmCfg.RemoveChart(chart.Namespace, chart.ChartName, spinner); err != nil {
 			if !errors.Is(err, driver.ErrReleaseNotFound) {
 				onFailure()
@@ -158,12 +158,12 @@ func (p *Packager) removeComponent(deployedPackage *types.DeployedPackage, deplo
 		p.updatePackageSecret(*deployedPackage)
 	}
 
-	if err := p.runActions(onRemove.Defaults, onRemove.After, nil); err != nil {
+	if err := p.runActions(onRemove.Defaults, onRemove.After); err != nil {
 		onFailure()
 		return deployedPackage, fmt.Errorf("unable to run the after action: %w", err)
 	}
 
-	if err := p.runActions(onRemove.Defaults, onRemove.OnSuccess, nil); err != nil {
+	if err := p.runActions(onRemove.Defaults, onRemove.OnSuccess); err != nil {
 		onFailure()
 		return deployedPackage, fmt.Errorf("unable to run the success action: %w", err)
 	}

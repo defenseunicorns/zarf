@@ -18,7 +18,6 @@ import (
 	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/internal/packager/helm"
 	"github.com/defenseunicorns/zarf/src/internal/packager/kustomize"
-	"github.com/defenseunicorns/zarf/src/internal/packager/template"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
@@ -85,9 +84,27 @@ func (p *Packager) FindImages() (imgMap map[string][]string, err error) {
 
 	componentDefinition := "\ncomponents:\n"
 
-	if err := p.setVariableMapInConfig(); err != nil {
+	if err := p.populatePackageVariables(); err != nil {
 		return nil, err
 	}
+
+	// Adding these so the default builtin values exist in case any helm charts rely on them
+	registryInfo := types.RegistryInfo{Address: p.cfg.FindImagesOpts.RegistryURL}
+	err = registryInfo.FillInEmptyValues()
+	if err != nil {
+		return nil, err
+	}
+	gitServer := types.GitServerInfo{}
+	err = gitServer.FillInEmptyValues()
+	if err != nil {
+		return nil, err
+	}
+	artifactServer := types.ArtifactServerInfo{}
+	artifactServer.FillInEmptyValues()
+	p.state = &types.ZarfState{
+		RegistryInfo:   registryInfo,
+		GitServer:      gitServer,
+		ArtifactServer: artifactServer}
 
 	for _, component := range p.cfg.Pkg.Components {
 
@@ -129,27 +146,11 @@ func (p *Packager) FindImages() (imgMap map[string][]string, err error) {
 		if err != nil {
 			return nil, err
 		}
-		values, err := template.Generate(p.cfg)
-		if err != nil {
-			return nil, fmt.Errorf("unable to generate template values")
-		}
-		// Adding these so the default builtin values exist in case any helm charts rely on them
-		registryInfo := types.RegistryInfo{Address: p.cfg.FindImagesOpts.RegistryURL}
-		err = registryInfo.FillInEmptyValues()
+		err = p.populateComponentAndStateTemplates(component.Name)
 		if err != nil {
 			return nil, err
 		}
-		gitServer := types.GitServerInfo{}
-		err = gitServer.FillInEmptyValues()
-		if err != nil {
-			return nil, err
-		}
-		artifactServer := types.ArtifactServerInfo{}
-		artifactServer.FillInEmptyValues()
-		values.SetState(&types.ZarfState{
-			RegistryInfo:   registryInfo,
-			GitServer:      gitServer,
-			ArtifactServer: artifactServer})
+
 		for _, chart := range component.Charts {
 
 			helmCfg := helm.New(
@@ -165,9 +166,9 @@ func (p *Packager) FindImages() (imgMap map[string][]string, err error) {
 				return nil, fmt.Errorf("unable to package the chart %s: %w", chart.Name, err)
 			}
 
-			valuesFilePaths, _ := utils.RecursiveFileList(componentPaths.Values, nil, false)
-			for _, path := range valuesFilePaths {
-				if err := values.Apply(component, path, false); err != nil {
+			valuesFilePaths, _ := helpers.RecursiveFileList(componentPaths.Values, nil, false)
+			for _, valueFilePath := range valuesFilePaths {
+				if err := p.variableConfig.ReplaceTextTemplate(valueFilePath); err != nil {
 					return nil, err
 				}
 			}
@@ -228,13 +229,13 @@ func (p *Packager) FindImages() (imgMap map[string][]string, err error) {
 				} else {
 					filename := filepath.Base(f)
 					newDestination := filepath.Join(componentPaths.Manifests, filename)
-					if err := utils.CreatePathAndCopy(f, newDestination); err != nil {
+					if err := helpers.CreatePathAndCopy(f, newDestination); err != nil {
 						return nil, fmt.Errorf("unable to copy manifest %s: %w", f, err)
 					}
 					f = newDestination
 				}
 
-				if err := values.Apply(component, f, true); err != nil {
+				if err := p.variableConfig.ReplaceTextTemplate(f); err != nil {
 					return nil, err
 				}
 				// Read the contents of each file

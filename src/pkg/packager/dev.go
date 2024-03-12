@@ -61,8 +61,8 @@ func (p *Packager) DevDeploy() error {
 	message.HeaderInfof("📦 PACKAGE DEPLOY %s", p.cfg.Pkg.Metadata.Name)
 
 	// Set variables and prompt if --confirm is not set
-	if err := p.setVariableMapInConfig(); err != nil {
-		return err
+	if err := p.populatePackageVariables(); err != nil {
+		return fmt.Errorf("unable to set the active variables: %w", err)
 	}
 
 	p.connectStrings = make(types.ConnectStrings)
