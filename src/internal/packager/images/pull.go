@@ -49,6 +49,10 @@ func (i *ImageConfig) PullAll() ([]ImgInfo, error) {
 		imgInfoList       []ImgInfo
 	)
 
+	const (
+		CosignSignatureAnnotationKey = "dev.cosignproject.cosign/signature"
+	)
+
 	type digestInfo struct {
 		refInfo transform.Image
 		digest  string
@@ -98,6 +102,33 @@ func (i *ImageConfig) PullAll() ([]ImgInfo, error) {
 			if err != nil {
 				metadataImageConcurrency.ErrorChan <- fmt.Errorf("failed to pull %s: %w", actualSrc, err)
 				return
+			}
+
+			cosignArtifactsExist := false
+			cosignArtifacts, err := utils.GetCosignArtifacts(actualSrc)
+			if err != nil {
+				metadataImageConcurrency.ErrorChan <- fmt.Errorf("failed to get cosign artifacts for %s: %w", actualSrc, err)
+				return
+			}
+
+			if len(cosignArtifacts) > 0 {
+				cosignArtifactsExist = true
+				message.Debugf("Found Cosign signature in image %s", actualSrc)
+				message.Debugf("Cosign artifacts: %v", cosignArtifacts)
+			} else {
+				message.Debugf("No Cosign signature found in image %s", actualSrc)
+			}
+
+			if cosignArtifactsExist {
+				for _, cosignArtifact := range cosignArtifacts {
+					if strings.HasSuffix(cosignArtifact, ".sig") {
+						err := utils.CosignVerifyBlob(actualSrc, cosignArtifact, "cosign.pub")
+						if err != nil {
+							metadataImageConcurrency.ErrorChan <- fmt.Errorf("failed to get verify image using cosign signature for %s: %w", actualSrc, err)
+							return
+						}
+					}
+				}
 			}
 
 			if metadataImageConcurrency.IsDone() {
