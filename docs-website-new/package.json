@@ -1,0 +1,33 @@
+{
+  "name": "zarf-website",
+  "version": "1.0.0",
+  "description": "Zarf Documentation",
+  "license": "Apache 2.0",
+  "author": "Defense Unicorns",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "npm run copy-files && hugo",
+    "build:production": "npm run clean && hugo -- --minify",
+    "clean": "rimraf public resources && hugo mod clean",
+    "copy-files": "sh setup-docs.sh",
+    "link-check": "npm run build && linkinator ./public --config .linkinator.config.json ",
+    "lint": "markdownlint ./content/**/*.md --ignore node_modules",
+    "lint:fix": "markdownlint -f ./content/**/*.md ./docs/**/*.md --ignore node_modules",
+    "start": "npm run clean && npm run copy-files && hugo serve",
+    "test": "npm run clean && npm run lint && npm run link-check",
+    "update": "hugo mod get -u ./... && hugo mod tidy && npx npm-check-updates -u && npm install"
+  },
+  "devDependencies": {
+    "@defenseunicorns/hugodocs": "github:defenseunicorns/build-hugo-docs",
+    "autoprefixer": "^10.4.15",
+    "hugo-extended": "0.118.2",
+    "linkinator": "^5.0.2",
+    "markdownlint-cli": "0.36.0",
+    "postcss-cli": "^10.1.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-go-template": "^0.0.15",
+    "rimraf": "^5.0.1"
+  }
+}

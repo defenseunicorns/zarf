@@ -1,0 +1,65 @@
+{{- $item:= .Get "item" -}}
+{{- $include:= .Get "include" -}}
+{{- $ignore:= .Get "ignore" -}}
+{{ $global := newScratch }}
+
+{{- if not $item -}}
+  {{- errorf "Missing required 'item' in shortcode: 'zarfprops'." -}}
+{{- end -}}
+
+{{- if and $include $ignore -}}
+  {{- errorf "Shortcode zarfprops cannot have both include and ignore defined." -}}
+{{- end -}}
+
+{{ $schema := $.Site.Data.zarf_schema }}
+{{- $itemSchema := index $schema.definitions $item -}}
+{{- if $itemSchema -}}
+  {{ $global.Set "hasRequired" false }}
+  <table class="table table-striped table-responsive" aria-label="{{ $item }}">
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range $key, $value := $itemSchema.properties }}
+        {{ if not (in $ignore $key) }}
+          {{ if and (not (in $include $key)) (gt (len $include) 0) }}
+          {{ else }}
+          {{ $deprecated := "[Deprecated]"}}
+            <tr>
+              <td>
+                {{if (strings.Contains $value.description $deprecated)}}
+                <code><s>{{ $key }}</s></code>
+                {{else}}
+                <code>{{ $key }}</code>
+                {{end}}
+
+                {{ if in $itemSchema.required $key }}
+                  <em>*</em>
+                  {{ $global.Set "hasRequired" true }}
+                {{ end }}
+              </td>
+              <td>
+                {{ $value.type }}
+              </td>
+              <td>
+                {{ $value.description }}
+              </td>
+            </tr>
+          {{ end }}
+        {{ end }}
+      {{ end }}
+    </tbody>
+  </table>
+  {{ if $global.Get "hasRequired" }}
+    <small>
+      <em>* Required field</em>
+      <br />&nbsp;
+    </small>
+  {{ end }}
+{{- else -}}
+  {{ errorf "Cannot get the value of the variable %s " $item }}
+{{- end -}}
