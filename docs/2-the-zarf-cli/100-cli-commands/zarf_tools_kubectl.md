@@ -13,6 +13,12 @@ zarf tools kubectl [flags]
   -h, --help   help for kubectl
 ```
 
+## Options inherited from parent commands
+
+```
+      --config-path string   Specify the path of the configuration file to use
+```
+
 ## SEE ALSO
 
 * [zarf tools](zarf_tools.md)	 - Collection of additional tools to make airgap easier

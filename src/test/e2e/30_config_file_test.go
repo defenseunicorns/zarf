@@ -16,19 +16,21 @@ import (
 func TestConfigFile(t *testing.T) {
 	t.Log("E2E: Config file")
 	e2e.SetupWithCluster(t)
-
 	var (
-		path   = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
-		dir    = "examples/config-file"
-		config = "zarf-config.toml"
+		path       = fmt.Sprintf("zarf-package-config-file-%s.tar.zst", e2e.Arch)
+		dir        = "./examples/config-file"
+		config     = "zarf-config.toml"
+		configPath = filepath.Join(dir, config)
 	)
 
 	e2e.CleanFiles(path)
 
 	// Test the config file environment variable
-	os.Setenv("ZARF_CONFIG", filepath.Join(dir, config))
-	configFileTests(t, dir, path)
+	os.Setenv("ZARF_CONFIG", configPath)
+	configFileTests(t, dir, path, "")
 	os.Unsetenv("ZARF_CONFIG")
+	// Test the config file flag --config-path
+	configFileTests(t, dir, path, configPath)
 
 	configFileDefaultTests(t)
 
@@ -38,21 +40,25 @@ func TestConfigFile(t *testing.T) {
 	e2e.CleanFiles(path)
 }
 
-func configFileTests(t *testing.T, dir, path string) {
-	_, stdErr, err := e2e.Zarf("package", "create", dir, "--confirm")
+func configFileTests(t *testing.T, dir, path string, configPath string) {
+	args := []string{"package", "create", dir, "--confirm"}
+	args = addConfigIfPresent(args, configPath)
+	_, stdErr, err := e2e.Zarf(args...)
 	require.NoError(t, err)
 	require.Contains(t, string(stdErr), "This is a zebra and they have stripes")
 	require.Contains(t, string(stdErr), "This is a leopard and they have spots")
 
-	_, stdErr, err = e2e.Zarf("package", "deploy", path, "--confirm")
+	args = []string{"package", "deploy", path, "--confirm"}
+	args = addConfigIfPresent(args, configPath)
+	_, stdErr, err = e2e.Zarf(args...)
 	require.NoError(t, err)
 	require.Contains(t, string(stdErr), "📦 LION COMPONENT")
 	require.NotContains(t, string(stdErr), "📦 LEOPARD COMPONENT")
 	require.NotContains(t, string(stdErr), "📦 ZEBRA COMPONENT")
 
 	// This package does not contain anything SBOMable
-	require.NotContains(t, string(stdErr), "This package does NOT contain an SBOM.")
 
+	require.NotContains(t, string(stdErr), "This package does NOT contain an SBOM.")
 	// Verify the configmap was properly templated
 	kubectlOut, _, err := e2e.Kubectl("-n", "zarf", "get", "configmap", "simple-configmap", "-o", "jsonpath={.data.templateme\\.properties}")
 	require.NoError(t, err)
@@ -163,4 +169,11 @@ func configFileDefaultTests(t *testing.T) {
 	}
 
 	os.Unsetenv("ZARF_CONFIG")
+}
+
+func addConfigIfPresent(args []string, value string) []string {
+	if value != "" {
+		return append(args, fmt.Sprintf("--config-path=%s", value))
+	}
+	return args
 }

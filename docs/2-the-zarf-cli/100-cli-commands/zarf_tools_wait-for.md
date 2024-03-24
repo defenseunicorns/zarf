@@ -47,6 +47,12 @@ $ zarf tools wait-for http google.com success                           #  wait 
       --timeout string     Specify the timeout duration for the wait command. (default "5m")
 ```
 
+## Options inherited from parent commands
+
+```
+      --config-path string   Specify the path of the configuration file to use
+```
+
 ## SEE ALSO
 
 * [zarf tools](zarf_tools.md)	 - Collection of additional tools to make airgap easier
