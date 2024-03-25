@@ -82,25 +82,38 @@ var devGenerateCmd = &cobra.Command{
 	},
 }
 
-var devTransformGitLinksCmd = &cobra.Command{
-	Use:     "patch-git HOST FILE",
-	Aliases: []string{"p"},
-	Short:   lang.CmdDevPatchGitShort,
-	Args:    cobra.ExactArgs(2),
-	Run: func(_ *cobra.Command, args []string) {
-		host, fileName := args[0], args[1]
+var devPatchCmd = &cobra.Command{
+	Use:     "patch TYPE HOST FILE",
+	Short:   lang.CmdDevPatchShort,
+	Long:    lang.CmdDevPatchLong,
+	Example: lang.CmdDevPatchExample,
+	Args:    cobra.ExactArgs(3),
+	Run: func(cmd *cobra.Command, args []string) {
+		patchType, host, fileName := args[0], args[1], args[2]
 
 		// Read the contents of the given file
 		content, err := os.ReadFile(fileName)
 		if err != nil {
-			message.Fatalf(err, lang.CmdDevPatchGitFileReadErr, fileName)
+			message.Fatalf(err, lang.CmdDevPatchFileReadErr, fileName)
 		}
 
-		pkgConfig.InitOpts.GitServer.Address = host
+		// Warn user to add creds to the manifests on their own (if applicable)
+		message.Warn(lang.CmdDevPatchCredsMsg)
 
 		// Perform git url transformation via regex
 		text := string(content)
-		processedText := transform.MutateGitURLsInText(message.Warnf, pkgConfig.InitOpts.GitServer.Address, text, pkgConfig.InitOpts.GitServer.PushUsername)
+		var processedText string
+
+		switch strings.ToLower(patchType) {
+		case "git":
+			pkgConfig.InitOpts.GitServer.Address = host
+			processedText = transform.MutateGitURLsInText(message.Warnf, pkgConfig.InitOpts.GitServer.Address, text, pkgConfig.InitOpts.GitServer.PushUsername)
+		case "oci":
+			pkgConfig.InitOpts.RegistryInfo.Address = host
+			processedText = transform.MutateOCIURLsInText(message.Warnf, pkgConfig.InitOpts.RegistryInfo.Address, text)
+		default:
+			message.Fatalf(nil, lang.CmdDevPatchInvalidFileTypeErr, patchType)
+		}
 
 		// Print the differences
 		message.PrintDiff(text, processedText)
@@ -108,20 +121,31 @@ var devTransformGitLinksCmd = &cobra.Command{
 		// Ask the user before this destructive action
 		confirm := false
 		prompt := &survey.Confirm{
-			Message: fmt.Sprintf(lang.CmdDevPatchGitOverwritePrompt, fileName),
+			Message: fmt.Sprintf(lang.CmdDevPatchOverwritePrompt, fileName),
 		}
 		if err := survey.AskOne(prompt, &confirm); err != nil {
-			message.Fatalf(nil, lang.CmdDevPatchGitOverwriteErr, err.Error())
+			message.Fatalf(nil, lang.CmdDevPatchOverwriteErr, err.Error())
 		}
 
 		if confirm {
 			// Overwrite the file
 			err = os.WriteFile(fileName, []byte(processedText), helpers.ReadAllWriteUser)
 			if err != nil {
-				message.Fatal(err, lang.CmdDevPatchGitFileWriteErr)
+				message.Fatal(err, lang.CmdDevPatchFileWriteErr)
 			}
 		}
+	},
+}
 
+var deprecatedDevTransformGitLinksCmd = &cobra.Command{
+	Use:     "patch-git HOST FILE",
+	Aliases: []string{"p"},
+	Hidden:  true,
+	Short:   lang.CmdDevPatchGitShort,
+	Args:    cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		message.Warn(lang.CmdDevPatchGitDeprecation)
+		devPatchCmd.Run(devPatchCmd, append([]string{"git"}, args...))
 	},
 }
 
@@ -276,8 +300,9 @@ func init() {
 	rootCmd.AddCommand(devCmd)
 
 	devCmd.AddCommand(devDeployCmd)
+	devCmd.AddCommand(devPatchCmd)
+	devCmd.AddCommand(deprecatedDevTransformGitLinksCmd)
 	devCmd.AddCommand(devGenerateCmd)
-	devCmd.AddCommand(devTransformGitLinksCmd)
 	devCmd.AddCommand(devSha256SumCmd)
 	devCmd.AddCommand(devFindImagesCmd)
 	devCmd.AddCommand(devGenConfigFileCmd)
@@ -307,7 +332,8 @@ func init() {
 
 	devLintCmd.Flags().StringToStringVar(&pkgConfig.CreateOpts.SetVariables, "set", v.GetStringMapString(common.VPkgCreateSet), lang.CmdPackageCreateFlagSet)
 	devLintCmd.Flags().StringVarP(&pkgConfig.CreateOpts.Flavor, "flavor", "f", v.GetString(common.VPkgCreateFlavor), lang.CmdPackageCreateFlagFlavor)
-	devTransformGitLinksCmd.Flags().StringVar(&pkgConfig.InitOpts.GitServer.PushUsername, "git-account", types.ZarfGitPushUser, lang.CmdDevFlagGitAccount)
+	devPatchCmd.Flags().StringVar(&pkgConfig.InitOpts.GitServer.PushUsername, "git-account", types.ZarfGitPushUser, lang.CmdDevFlagGitAccount)
+	deprecatedDevTransformGitLinksCmd.Flags().StringVar(&pkgConfig.InitOpts.GitServer.PushUsername, "git-account", types.ZarfGitPushUser, lang.CmdDevFlagGitAccount)
 }
 
 func bindDevDeployFlags(v *viper.Viper) {

@@ -7,6 +7,7 @@ package cluster
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,13 +39,34 @@ func (c *Cluster) GenerateRegistryPullCreds(namespace, name string, registryInfo
 	authEncodedValue := base64.StdEncoding.EncodeToString([]byte(fieldValue))
 
 	registry := registryInfo.Address
-	// Create the expected structure for the dockerconfigjson
-	dockerConfigJSON := DockerConfig{
-		Auths: DockerConfigEntry{
-			registry: DockerConfigEntryWithAuth{
-				Auth: authEncodedValue,
+
+	var dockerConfigJSON DockerConfig
+
+	// Build zarf-docker-registry service address string
+	registryServiceInfo, err := c.ServiceInfoFromNodePortURL(registry)
+	if err != nil {
+		dockerConfigJSON = DockerConfig{
+			Auths: DockerConfigEntry{
+				// nodePort for zarf-docker-registry
+				registry: DockerConfigEntryWithAuth{
+					Auth: authEncodedValue,
+				},
 			},
-		},
+		}
+	} else {
+		kubeDNSRegistryURL := fmt.Sprintf("%s:%d", registryServiceInfo.ClusterIP, registryServiceInfo.Port)
+		dockerConfigJSON = DockerConfig{
+			Auths: DockerConfigEntry{
+				// nodePort for zarf-docker-registry
+				registry: DockerConfigEntryWithAuth{
+					Auth: authEncodedValue,
+				},
+				// internal dns for zarf-docker-registry
+				kubeDNSRegistryURL: DockerConfigEntryWithAuth{
+					Auth: authEncodedValue,
+				},
+			},
+		}
 	}
 
 	// Convert to JSON

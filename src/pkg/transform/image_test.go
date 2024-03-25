@@ -7,6 +7,7 @@ package transform
 import (
 	"testing"
 
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/stretchr/testify/require"
 )
 
@@ -76,6 +77,40 @@ func TestImageTransformHostWithoutChecksum(t *testing.T) {
 	}
 }
 
+func TestMutateOCIUrlsInText(t *testing.T) {
+	originalText := `
+	# Here we handle oci URLs (see below comments)
+	# We transform oci://*/* URLs
+	oci://ghcr.io/defenseunicorns/packages/dos-games:1.0.0-amd64
+	# Even URLs with things on either side
+	stuff oci://ghcr.io/defenseunicorns/packages/dos-games:1.0.0-amd64 andthings
+	# And ones without tags or domains
+	oci://defenseunicorns/packages/dos-games
+	oci://localhost:555/defenseunicorns/packages/dos-games
+	# And ones with SHA digests
+	oci://localhost:555/defenseunicorns/packages/dos-games@sha256:f78e442f0f3eb3e9459b5ae6b1a8fda62f8dfe818112e7d130a4e8ae72b3cbff
+	# But not regular URLs
+	https://www.defenseunicorns.com/
+	`
+	expectedText := `
+	# Here we handle oci URLs (see below comments)
+	# We transform oci://*/* URLs
+	oci://new-replace-url.com/defenseunicorns/packages/dos-games:1.0.0-amd64-zarf-1025351377
+	# Even URLs with things on either side
+	stuff oci://new-replace-url.com/defenseunicorns/packages/dos-games:1.0.0-amd64-zarf-1025351377 andthings
+	# And ones without tags or domains
+	oci://new-replace-url.com/defenseunicorns/packages/dos-games
+	oci://new-replace-url.com/defenseunicorns/packages/dos-games
+	# And ones with SHA digests
+	oci://new-replace-url.com/defenseunicorns/packages/dos-games@sha256:f78e442f0f3eb3e9459b5ae6b1a8fda62f8dfe818112e7d130a4e8ae72b3cbff
+	# But not regular URLs
+	https://www.defenseunicorns.com/
+	`
+
+	resultingText := MutateOCIURLsInText(message.Warnf, "new-replace-url.com", originalText)
+	require.Equal(t, resultingText, expectedText)
+
+}
 func TestParseImageRef(t *testing.T) {
 	var expectedResult = [][]string{
 		{"docker.io/", "library/nginx", "latest", ""},

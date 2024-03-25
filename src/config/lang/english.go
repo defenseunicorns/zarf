@@ -59,8 +59,8 @@ const (
 	RootCmdFlagTempDir     = "Specify the temporary directory to use for intermediate files"
 	RootCmdFlagInsecure    = "Allow access to insecure registries and disable other recommended security enforcements such as package checksum and signature validation. This flag should only be used if you have a specific reason and accept the reduced security posture."
 
-	RootCmdDeprecatedDeploy = "Deprecated: Please use \"zarf package deploy %s\" to deploy this package.  This warning will be removed in Zarf v1.0.0."
-	RootCmdDeprecatedCreate = "Deprecated: Please use \"zarf package create\" to create this package.  This warning will be removed in Zarf v1.0.0."
+	RootCmdDeployDeprecation = "Deprecated: Please use \"zarf package deploy %s\" to deploy this package.  This warning will be removed in Zarf v1.0.0."
+	RootCmdCreateDeprecation = "Deprecated: Please use \"zarf package create\" to create this package.  This warning will be removed in Zarf v1.0.0."
 
 	RootCmdErrInvalidLogLevel = "Invalid log level. Valid options are: warn, info, debug, trace."
 
@@ -359,15 +359,31 @@ $ zarf package pull oci://ghcr.io/defenseunicorns/packages/dos-games:1.0.0 -a sk
 	CmdDevDeployFlagNoYolo = "Disable the YOLO mode default override and create / deploy the package as-defined"
 	CmdDevDeployErr        = "Failed to dev deploy: %s"
 
+	CmdDevPatchCredsMsg = "Zarf will not automatically add credentials to a manifest, please update the secret references manually as appropriate (i.e. 'private-registry' or 'private-git-server')."
+	CmdDevPatchShort    = "Manually patches files to match Zarf's mutated airgap resource references (not needed when using the Zarf Agent)"
+	CmdDevPatchLong     = "Manually patches files to match Zarf's mutated airgap resource references. Useful when not using the Zarf Agent in your cluster or when you need to see how a given resource will be mutated in the airgap."
+	CmdDevPatchGitShort = "[Deprecated] Converts all .git URLs to the specified Zarf HOST and with the Zarf URL pattern in a given FILE.  NOTE:\n" +
+		"This should only be used for manifests that are not mutated by the Zarf Agent Mutating Webhook."
 	CmdDevGenerateShort   = "[alpha] Creates a zarf.yaml automatically from a given remote (git) Helm chart"
 	CmdDevGenerateExample = "zarf dev generate podinfo --url https://github.com/stefanprodan/podinfo.git --version 6.4.0 --gitPath charts/podinfo"
 
-	CmdDevPatchGitShort = "Converts all .git URLs to the specified Zarf HOST and with the Zarf URL pattern in a given FILE.  NOTE:\n" +
-		"This should only be used for manifests that are not mutated by the Zarf Agent Mutating Webhook."
-	CmdDevPatchGitOverwritePrompt = "Overwrite the file %s with these changes?"
-	CmdDevPatchGitOverwriteErr    = "Confirm overwrite canceled: %s"
-	CmdDevPatchGitFileReadErr     = "Unable to read the file %s"
-	CmdDevPatchGitFileWriteErr    = "Unable to write the changes back to the file"
+	CmdDevPatchOverwritePrompt = "Overwrite the file %s with these changes?"
+	CmdDevPatchOverwriteErr    = "Confirm overwrite canceled: %s"
+	CmdDevPatchFileReadErr     = "Unable to read the file %s"
+	CmdDevPatchFileWriteErr    = "Unable to write the changes back to the file"
+
+	CmdDevPatchFlagGitUsername    = "User or organization name for the git account that the repos are created under"
+	CmdDevPatchInvalidFileTypeErr = "Invalid filetype '%s' - valid filetypes are: oci and git"
+	CmdDevPatchExample            = `
+# Print all Zarf patch options:
+$ zarf prepare patch
+
+# Patch specific resource types with a host:
+$ zarf prepare patch git http://zarf-gitea-http.zarf.svc.cluster.local:3000 ./manifest.yaml
+$ zarf prepare patch oci 127.0.0.1:31999 ./manifest.yaml
+`
+
+	CmdDevPatchGitDeprecation = "Deprecated: This command has been replaced by 'zarf prepare patch git' and will be removed in Zarf v1.0.0."
 
 	CmdDevSha256sumShort         = "Generates a SHA256SUM for the given file"
 	CmdDevSha256sumRemoteWarning = "This is a remote source. If a published checksum is available you should use that rather than calculating it directly from the remote link."
@@ -615,6 +631,8 @@ const (
 	AgentInfoWebhookAllowed = "Webhook [%s - %s] - Allowed: %t"
 	AgentInfoShutdown       = "Shutdown gracefully..."
 	AgentInfoPort           = "Server running in port: %s"
+	AgentWarnNotOCIType     = "Skipping HelmRepo mutation because the type is not OCI: %s"
+	AgentWarnSemVerRef      = "Detected a semver OCI ref (%s) - continuing but will be unable to guarantee against collisions"
 
 	AgentErrBadRequest             = "could not read request body: %s"
 	AgentErrBindHandler            = "Unable to bind the webhook handler"

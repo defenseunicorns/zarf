@@ -1,0 +1,14 @@
+# Why do we need this ?
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  name: service-viewer-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-viewer
+subjects:
+- kind: ServiceAccount
+  name: zarf
+  namespace: zarf
