@@ -54,12 +54,12 @@ func (p *Packager) Deploy() (err error) {
 	if isInteractive {
 		filter := filters.Empty()
 
-		p.cfg.Pkg, p.warnings, err = p.source.LoadPackage(p.layout, filter, true)
+		p.cfg.Pkg, err = p.source.LoadPackage(p.layout, filter, true, p.warnings)
 		if err != nil {
 			return fmt.Errorf("unable to load the package: %w", err)
 		}
 	} else {
-		p.cfg.Pkg, p.warnings, err = p.source.LoadPackage(p.layout, deployFilter, true)
+		p.cfg.Pkg, err = p.source.LoadPackage(p.layout, deployFilter, true, p.warnings)
 		if err != nil {
 			return fmt.Errorf("unable to load the package: %w", err)
 		}
@@ -73,13 +73,10 @@ func (p *Packager) Deploy() (err error) {
 		return err
 	}
 
-	var sbomWarnings []string
-	p.sbomViewFiles, sbomWarnings, err = p.layout.SBOMs.StageSBOMViewFiles()
+	p.sbomViewFiles, err = p.layout.SBOMs.StageSBOMViewFiles(p.warnings)
 	if err != nil {
 		return err
 	}
-
-	p.warnings = append(p.warnings, sbomWarnings...)
 
 	// Confirm the overall package deployment
 	if !p.confirmAction(config.ZarfDeployStage) {

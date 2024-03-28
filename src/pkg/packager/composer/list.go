@@ -13,6 +13,7 @@ import (
 	"github.com/defenseunicorns/pkg/helpers"
 	"github.com/defenseunicorns/zarf/src/internal/packager/validate"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/pkg/zoci"
@@ -256,19 +257,16 @@ func (ic *ImportChain) String() string {
 }
 
 // Migrate performs migrations on the import chain
-func (ic *ImportChain) Migrate(build types.ZarfBuildData) (warnings []string) {
+func (ic *ImportChain) Migrate(build types.ZarfBuildData, warnings *message.Warnings) {
 	node := ic.head
 	for node != nil {
-		migrated, w := deprecated.MigrateComponent(build, node.ZarfComponent)
+		migrated := deprecated.MigrateComponent(build, node.ZarfComponent, warnings)
 		node.ZarfComponent = migrated
-		warnings = append(warnings, w...)
 		node = node.next
 	}
-	if len(warnings) > 0 {
-		final := fmt.Sprintf("Migrations were performed on the import chain of: %q", ic.head.Name)
-		warnings = append(warnings, final)
+	if warnings.HasMessages() {
+		warnings.Add(fmt.Sprintf("migrations were performed on the import chain of: %q", ic.head.Name))
 	}
-	return warnings
 }
 
 // Compose merges the import chain into a single component

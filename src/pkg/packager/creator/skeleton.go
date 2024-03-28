@@ -42,34 +42,32 @@ func NewSkeletonCreator(createOpts types.ZarfCreateOptions, publishOpts types.Za
 }
 
 // LoadPackageDefinition loads and configure a zarf.yaml file when creating and publishing a skeleton package.
-func (sc *SkeletonCreator) LoadPackageDefinition(dst *layout.PackagePaths) (pkg types.ZarfPackage, warnings []string, err error) {
-	pkg, warnings, err = dst.ReadZarfYAML()
+func (sc *SkeletonCreator) LoadPackageDefinition(dst *layout.PackagePaths, warnings *message.Warnings) (pkg types.ZarfPackage, err error) {
+	pkg, err = dst.ReadZarfYAML(warnings)
 	if err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
 	pkg.Metadata.Architecture = config.GetArch()
 
 	// Compose components into a single zarf.yaml file
-	pkg, composeWarnings, err := ComposeComponents(pkg, sc.createOpts.Flavor)
+	pkg, err = ComposeComponents(pkg, sc.createOpts.Flavor, warnings)
 	if err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
 	pkg.Metadata.Architecture = zoci.SkeletonArch
 
-	warnings = append(warnings, composeWarnings...)
-
 	pkg.Components, err = sc.processExtensions(pkg.Components, dst)
 	if err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
-	for _, warning := range warnings {
+	for _, warning := range warnings.GetMessages() {
 		message.Warn(warning)
 	}
 
-	return pkg, warnings, nil
+	return pkg, nil
 }
 
 // Assemble updates all components of the loaded Zarf package with necessary modifications for package assembly.

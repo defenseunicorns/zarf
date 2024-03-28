@@ -40,7 +40,7 @@ func (p *Packager) DevDeploy() error {
 		return err
 	}
 
-	p.cfg.Pkg, p.warnings, err = pc.LoadPackageDefinition(p.layout)
+	p.cfg.Pkg, err = pc.LoadPackageDefinition(p.layout, p.warnings)
 	if err != nil {
 		return err
 	}

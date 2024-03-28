@@ -32,13 +32,13 @@ type TarballSource struct {
 }
 
 // LoadPackage loads a package from a tarball.
-func (s *TarballSource) LoadPackage(dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *TarballSource) LoadPackage(dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool, warnings *message.Warnings) (pkg types.ZarfPackage, err error) {
 	spinner := message.NewProgressSpinner("Loading package from %q", s.PackageSource)
 	defer spinner.Stop()
 
 	if s.Shasum != "" {
 		if err := helpers.SHAsMatch(s.PackageSource, s.Shasum); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 	}
 
@@ -77,22 +77,22 @@ func (s *TarballSource) LoadPackage(dst *layout.PackagePaths, filter filters.Com
 		return nil
 	})
 	if err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 
 	dst.SetFromPaths(pathsExtracted)
 
-	pkg, warnings, err = dst.ReadZarfYAML()
+	pkg, err = dst.ReadZarfYAML(warnings)
 	if err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 	pkg.Components, err = filter.Apply(pkg)
 	if err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 
 	if err := dst.MigrateLegacy(); err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 
 	if !dst.IsLegacyLayout() {
@@ -100,13 +100,13 @@ func (s *TarballSource) LoadPackage(dst *layout.PackagePaths, filter filters.Com
 		defer spinner.Stop()
 
 		if err := ValidatePackageIntegrity(dst, pkg.Metadata.AggregateChecksum, false); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 
 		spinner.Success()
 
 		if err := ValidatePackageSignature(dst, s.PublicKeyPath); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 	}
 
@@ -116,31 +116,31 @@ func (s *TarballSource) LoadPackage(dst *layout.PackagePaths, filter filters.Com
 				if layout.IsNotLoaded(err) {
 					_, err := dst.Components.Create(component)
 					if err != nil {
-						return pkg, nil, err
+						return pkg, err
 					}
 				} else {
-					return pkg, nil, err
+					return pkg, err
 				}
 			}
 		}
 
 		if dst.SBOMs.Path != "" {
 			if err := dst.SBOMs.Unarchive(); err != nil {
-				return pkg, nil, err
+				return pkg, err
 			}
 		}
 	}
 
 	spinner.Success()
 
-	return pkg, warnings, nil
+	return pkg, nil
 }
 
 // LoadPackageMetadata loads a package's metadata from a tarball.
-func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM bool, skipValidation bool, warnings *message.Warnings) (pkg types.ZarfPackage, err error) {
 	if s.Shasum != "" {
 		if err := helpers.SHAsMatch(s.PackageSource, s.Shasum); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 	}
 
@@ -152,7 +152,7 @@ func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM b
 
 	for _, rel := range toExtract {
 		if err := archiver.Extract(s.PackageSource, rel, dst.Base); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 		// archiver.Extract will not return an error if the file does not exist, so we must manually check
 		if !helpers.InvalidPath(filepath.Join(dst.Base, rel)) {
@@ -162,13 +162,13 @@ func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM b
 
 	dst.SetFromPaths(pathsExtracted)
 
-	pkg, warnings, err = dst.ReadZarfYAML()
+	pkg, err = dst.ReadZarfYAML(warnings)
 	if err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 
 	if err := dst.MigrateLegacy(); err != nil {
-		return pkg, nil, err
+		return pkg, err
 	}
 
 	if !dst.IsLegacyLayout() {
@@ -177,7 +177,7 @@ func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM b
 			defer spinner.Stop()
 
 			if err := ValidatePackageIntegrity(dst, pkg.Metadata.AggregateChecksum, true); err != nil {
-				return pkg, nil, err
+				return pkg, err
 			}
 
 			spinner.Success()
@@ -187,18 +187,18 @@ func (s *TarballSource) LoadPackageMetadata(dst *layout.PackagePaths, wantSBOM b
 			if errors.Is(err, ErrPkgSigButNoKey) && skipValidation {
 				message.Warn("The package was signed but no public key was provided, skipping signature validation")
 			} else {
-				return pkg, nil, err
+				return pkg, err
 			}
 		}
 	}
 
 	if wantSBOM {
 		if err := dst.SBOMs.Unarchive(); err != nil {
-			return pkg, nil, err
+			return pkg, err
 		}
 	}
 
-	return pkg, warnings, nil
+	return pkg, nil
 }
 
 // Collect for the TarballSource is essentially an `mv`

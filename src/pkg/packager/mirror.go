@@ -22,18 +22,15 @@ func (p *Packager) Mirror() (err error) {
 		filters.BySelectState(p.cfg.PkgOpts.OptionalComponents),
 	)
 
-	p.cfg.Pkg, p.warnings, err = p.source.LoadPackage(p.layout, filter, true)
+	p.cfg.Pkg, err = p.source.LoadPackage(p.layout, filter, true, p.warnings)
 	if err != nil {
 		return fmt.Errorf("unable to load the package: %w", err)
 	}
 
-	var sbomWarnings []string
-	p.sbomViewFiles, sbomWarnings, err = p.layout.SBOMs.StageSBOMViewFiles()
+	p.sbomViewFiles, err = p.layout.SBOMs.StageSBOMViewFiles(p.warnings)
 	if err != nil {
 		return err
 	}
-
-	p.warnings = append(p.warnings, sbomWarnings...)
 
 	// Confirm the overall package mirror
 	if !p.confirmAction(config.ZarfMirrorStage) {

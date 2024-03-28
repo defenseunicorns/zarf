@@ -10,14 +10,14 @@ import (
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/pkg/interactive"
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
 // FillActiveTemplate merges user-specified variables into the configuration templates of a zarf.yaml.
-func FillActiveTemplate(pkg types.ZarfPackage, setVariables map[string]string) (types.ZarfPackage, []string, error) {
+func FillActiveTemplate(pkg types.ZarfPackage, setVariables map[string]string, warnings *message.Warnings) (types.ZarfPackage, error) {
 	templateMap := map[string]string{}
-	warnings := []string{}
 
 	promptAndSetTemplate := func(templatePrefix string, deprecated bool) error {
 		yamlTemplates, err := utils.FindYamlTemplates(&pkg, templatePrefix, "###")
@@ -27,7 +27,7 @@ func FillActiveTemplate(pkg types.ZarfPackage, setVariables map[string]string) (
 
 		for key := range yamlTemplates {
 			if deprecated {
-				warnings = append(warnings, fmt.Sprintf(lang.PkgValidateTemplateDeprecation, key, key, key))
+				warnings.Add(fmt.Sprintf(lang.PkgValidateTemplateDeprecation, key, key, key))
 			}
 
 			_, present := setVariables[key]
@@ -53,25 +53,25 @@ func FillActiveTemplate(pkg types.ZarfPackage, setVariables map[string]string) (
 
 	// update the component templates on the package
 	if err := ReloadComponentTemplatesInPackage(&pkg); err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
 	if err := promptAndSetTemplate(types.ZarfPackageTemplatePrefix, false); err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 	// [DEPRECATION] Set the Package Variable syntax as well for backward compatibility
 	if err := promptAndSetTemplate(types.ZarfPackageVariablePrefix, true); err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
 	// Add special variable for the current package architecture
 	templateMap[types.ZarfPackageArch] = pkg.Metadata.Architecture
 
 	if err := utils.ReloadYamlTemplate(&pkg, templateMap); err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
-	return pkg, warnings, nil
+	return pkg, nil
 }
 
 // ReloadComponentTemplate appends ###ZARF_COMPONENT_NAME### for the component, assigns value, and reloads

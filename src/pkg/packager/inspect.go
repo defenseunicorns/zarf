@@ -13,7 +13,7 @@ import (
 func (p *Packager) Inspect() (err error) {
 	wantSBOM := p.cfg.InspectOpts.ViewSBOM || p.cfg.InspectOpts.SBOMOutputDir != ""
 
-	p.cfg.Pkg, p.warnings, err = p.source.LoadPackageMetadata(p.layout, wantSBOM, true)
+	p.cfg.Pkg, err = p.source.LoadPackageMetadata(p.layout, wantSBOM, true, p.warnings)
 	if err != nil {
 		return err
 	}

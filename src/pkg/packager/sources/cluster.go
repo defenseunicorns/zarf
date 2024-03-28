@@ -11,6 +11,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/internal/packager/validate"
 	"github.com/defenseunicorns/zarf/src/pkg/cluster"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/filters"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
@@ -42,8 +43,8 @@ type ClusterSource struct {
 // LoadPackage loads a package from a cluster.
 //
 // This is not implemented.
-func (s *ClusterSource) LoadPackage(_ *layout.PackagePaths, _ filters.ComponentFilterStrategy, _ bool) (types.ZarfPackage, []string, error) {
-	return types.ZarfPackage{}, nil, fmt.Errorf("not implemented")
+func (s *ClusterSource) LoadPackage(_ *layout.PackagePaths, _ filters.ComponentFilterStrategy, _ bool, _ *message.Warnings) (types.ZarfPackage, error) {
+	return types.ZarfPackage{}, fmt.Errorf("not implemented")
 }
 
 // Collect collects a package from a cluster.
@@ -54,15 +55,15 @@ func (s *ClusterSource) Collect(_ string) (string, error) {
 }
 
 // LoadPackageMetadata loads package metadata from a cluster.
-func (s *ClusterSource) LoadPackageMetadata(dst *layout.PackagePaths, _ bool, _ bool) (types.ZarfPackage, []string, error) {
+func (s *ClusterSource) LoadPackageMetadata(dst *layout.PackagePaths, _ bool, _ bool, _ *message.Warnings) (types.ZarfPackage, error) {
 	dpkg, err := s.GetDeployedPackage(s.PackageSource)
 	if err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
 	if err := utils.WriteYaml(dst.ZarfYAML, dpkg.Data, helpers.ReadUser); err != nil {
-		return types.ZarfPackage{}, nil, err
+		return types.ZarfPackage{}, err
 	}
 
-	return dpkg.Data, nil, nil
+	return dpkg.Data, nil
 }
