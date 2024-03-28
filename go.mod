@@ -29,7 +29,7 @@ require (
 	github.com/google/go-containerregistry v0.19.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/moby/moby v24.0.9+incompatible
+	github.com/moby/moby v26.0.0+incompatible
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.18.0
@@ -59,6 +59,8 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.16.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require github.com/moby/docker-image-spec v1.3.1 // indirect
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
@@ -201,7 +203,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/cli v26.0.0+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v24.0.9+incompatible // indirect
+	github.com/docker/docker v26.0.0+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
