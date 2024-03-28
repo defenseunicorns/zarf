@@ -142,11 +142,15 @@ func validateComponent(pkg types.ZarfPackage, component types.ZarfComponent) err
 		return fmt.Errorf(lang.PkgValidateErrComponentName, component.Name)
 	}
 
+	if component.DeprecatedRequired != nil {
+		return fmt.Errorf(lang.PkgValidateErrComponentRequired, component.Name)
+	}
+
 	if !slices.Contains(supportedOS, component.Only.LocalOS) {
 		return fmt.Errorf(lang.PkgValidateErrComponentLocalOS, component.Name, component.Only.LocalOS, supportedOS)
 	}
 
-	if component.Required != nil && *component.Required {
+	if component.Optional != nil || !*component.Optional {
 		if component.Default {
 			return fmt.Errorf(lang.PkgValidateErrComponentReqDefault, component.Name)
 		}

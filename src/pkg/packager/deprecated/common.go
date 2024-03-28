@@ -17,23 +17,20 @@ import (
 	"github.com/pterm/pterm"
 )
 
-// BreakingChange represents a breaking change that happened on a specified Zarf version
-type BreakingChange struct {
+// breakingChange represents a breaking change that happened on a specified Zarf version
+type breakingChange struct {
 	version    *semver.Version
 	title      string
 	mitigation string
 }
 
-// List of migrations tracked in the zarf.yaml build data.
-const (
-	// This should be updated when a breaking change is introduced to the Zarf package structure.  See: https://github.com/defenseunicorns/zarf/releases/tag/v0.27.0
-	LastNonBreakingVersion   = "v0.27.0"
-	ScriptsToActionsMigrated = "scripts-to-actions"
-	PluralizeSetVariable     = "pluralize-set-variable"
-)
+// LastNonBreakingVersion is the last version that did not have any breaking changes
+//
+// This should be updated when a breaking change is introduced to the Zarf package structure.  See: https://github.com/defenseunicorns/zarf/releases/tag/v0.32.2
+const LastNonBreakingVersion = "v0.32.2"
 
 // List of breaking changes to warn the user of.
-var breakingChanges = []BreakingChange{
+var breakingChanges = []breakingChange{
 	{
 		version:    semver.New(0, 26, 0, "", ""),
 		title:      "Zarf container images are now mutated based on tag instead of repository name.",
@@ -41,30 +38,42 @@ var breakingChanges = []BreakingChange{
 	},
 }
 
+// Migration represents a migration that can be run on a component.
+type Migration interface {
+	// ID returns the ID of the migration
+	ID() string
+	// Clear clears the deprecated configuration from the component
+	Clear(mc types.ZarfComponent) types.ZarfComponent
+	// Run runs the migration on the component
+	Run(c types.ZarfComponent) (types.ZarfComponent, string)
+}
+
+// Migrations returns a list of all current migrations.
+//
+// This function operates as the source of truth for consuming migrations.
+func Migrations() []Migration {
+	return []Migration{
+		ScriptsToActions{},
+		SetVariableToSetVariables{},
+		RequiredToOptional{},
+	}
+}
+
 // MigrateComponent runs all migrations on a component.
 // Build should be empty on package create, but include just in case someone copied a zarf.yaml from a zarf package.
 func MigrateComponent(build types.ZarfBuildData, component types.ZarfComponent) (migratedComponent types.ZarfComponent, warnings []string) {
 	migratedComponent = component
 
-	// If the component has already been migrated, clear the deprecated scripts.
-	if slices.Contains(build.Migrations, ScriptsToActionsMigrated) {
-		migratedComponent.DeprecatedScripts = types.DeprecatedZarfComponentScripts{}
-	} else {
-		// Otherwise, run the migration.
-		var warning string
-		if migratedComponent, warning = migrateScriptsToActions(migratedComponent); warning != "" {
-			warnings = append(warnings, warning)
-		}
-	}
-
-	// If the component has already been migrated, clear the setVariable definitions.
-	if slices.Contains(build.Migrations, PluralizeSetVariable) {
-		migratedComponent = clearSetVariables(migratedComponent)
-	} else {
-		// Otherwise, run the migration.
-		var warning string
-		if migratedComponent, warning = migrateSetVariableToSetVariables(migratedComponent); warning != "" {
-			warnings = append(warnings, warning)
+	// Run all migrations
+	for _, m := range Migrations() {
+		if slices.Contains(build.Migrations, m.ID()) {
+			migratedComponent = m.Clear(migratedComponent)
+		} else {
+			// Otherwise, run the migration.
+			var warning string
+			if migratedComponent, warning = m.Run(migratedComponent); warning != "" {
+				warnings = append(warnings, warning)
+			}
 		}
 	}
 
@@ -85,7 +94,7 @@ func PrintBreakingChanges(deployedZarfVersion string) {
 		return
 	}
 
-	applicableBreakingChanges := []BreakingChange{}
+	applicableBreakingChanges := []breakingChange{}
 
 	// Calculate the applicable breaking changes
 	for _, breakingChange := range breakingChanges {

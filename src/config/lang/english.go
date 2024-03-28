@@ -359,6 +359,9 @@ $ zarf package pull oci://ghcr.io/defenseunicorns/packages/dos-games:1.0.0 -a sk
 	CmdDevDeployFlagNoYolo = "Disable the YOLO mode default override and create / deploy the package as-defined"
 	CmdDevDeployErr        = "Failed to dev deploy: %s"
 
+	CmdDevMigrateShort = "[beta] Migrates the zarf.yaml in a given directory to the latest version of the zarf.yaml format"
+	CmdDevMigrateLong  = "[beta] Migrates the zarf.yaml in a given directory to the latest version of the zarf.yaml format.\n\n" +
+		"This command modifies the original zarf.yaml file, performs a best effort attempt to preserve comments, and will format the contents in an opinionated manner."
 	CmdDevGenerateShort   = "[alpha] Creates a zarf.yaml automatically from a given remote (git) Helm chart"
 	CmdDevGenerateExample = "zarf dev generate podinfo --url https://github.com/stefanprodan/podinfo.git --version 6.4.0 --gitPath charts/podinfo"
 
@@ -701,6 +704,7 @@ const (
 	PkgValidateErrComponentLocalOS        = "component %q contains a localOS value that is not supported: %s (supported: %s)"
 	PkgValidateErrComponentNameNotUnique  = "component name %q is not unique"
 	PkgValidateErrComponent               = "invalid component %q: %w"
+	PkgValidateErrComponentRequired       = "component %q contains deprecated usage of required. Please use `zarf dev migrate <directory> --run required-to-optional` to migrate your zarf.yaml"
 	PkgValidateErrComponentReqDefault     = "component %q cannot be both required and default"
 	PkgValidateErrComponentReqGrouped     = "component %q cannot be both required and grouped"
 	PkgValidateErrComponentYOLO           = "component %q incompatible with the online-only package flag (metadata.yolo): %w"

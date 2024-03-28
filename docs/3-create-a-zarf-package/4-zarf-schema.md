@@ -607,12 +607,12 @@ Must be one of:
 
 <details>
 <summary>
-<strong> <a name="components_items_required"></a>required</strong>
+<strong> <a name="components_items_optional"></a>optional</strong>
 </summary>
 &nbsp;
 <blockquote>
 
-**Description:** Do not prompt user to install this component
+**Description:** Prompt user to install this component on package deploy
 
 |          |           |
 | -------- | --------- |

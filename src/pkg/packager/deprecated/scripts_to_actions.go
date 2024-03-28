@@ -11,14 +11,31 @@ import (
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
-// migrateScriptsToActions coverts the deprecated scripts to the new actions
+// ScriptsToActionsID is the ID of the ScriptsToActions migration
+const ScriptsToActionsID = "scripts-to-actions"
+
+// ScriptsToActions migrates scripts to actions
+type ScriptsToActions struct{}
+
+// ID returns the ID of the migration
+func (m ScriptsToActions) ID() string {
+	return ScriptsToActionsID
+}
+
+// Clear the deprecated scripts.
+func (m ScriptsToActions) Clear(mc types.ZarfComponent) types.ZarfComponent {
+	mc.DeprecatedScripts = types.DeprecatedZarfComponentScripts{}
+	return mc
+}
+
+// Run coverts the deprecated scripts to the new actions
 // The following have no migration:
 // - Actions.Create.After
 // - Actions.Remove.*
 // - Actions.*.OnSuccess
 // - Actions.*.OnFailure
 // - Actions.*.*.Env
-func migrateScriptsToActions(c types.ZarfComponent) (types.ZarfComponent, string) {
+func (m ScriptsToActions) Run(c types.ZarfComponent) (types.ZarfComponent, string) {
 	var hasScripts bool
 
 	// Convert a script configs to action defaults.
