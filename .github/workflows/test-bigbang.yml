@@ -36,7 +36,7 @@ jobs:
           build-examples: "false"
 
       - name: Login to Iron Bank
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         if: ${{ env.IRON_BANK_ROBOT_USERNAME != '' }}
         env:
           IRON_BANK_ROBOT_USERNAME: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
@@ -67,7 +67,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Download build artifacts
-        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
         with:
           name: build-artifacts
           path: build/
@@ -87,7 +87,7 @@ jobs:
         uses: ./.github/actions/k3d
 
       - name: Login to Iron Bank
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         if: ${{ env.IRON_BANK_ROBOT_USERNAME != '' }}
         env:
           IRON_BANK_ROBOT_USERNAME: ${{ secrets.IRON_BANK_ROBOT_USERNAME }}
