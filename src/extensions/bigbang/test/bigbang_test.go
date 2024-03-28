@@ -117,10 +117,10 @@ func TestReleases(t *testing.T) {
 	require.NoError(t, err, stdOut, stdErr)
 
 	// Test connectivity to Twistlock
-	testConnection(t)
+	testConnection(context.TODO(), t)
 }
 
-func testConnection(t *testing.T) {
+func testConnection(ctx context.Context, t *testing.T) {
 	// Establish the tunnel config
 	c, err := cluster.NewCluster()
 	require.NoError(t, err)
@@ -128,7 +128,7 @@ func testConnection(t *testing.T) {
 	require.NoError(t, err)
 
 	// Establish the tunnel connection
-	_, err = tunnel.Connect()
+	_, err = tunnel.Connect(ctx)
 	require.NoError(t, err)
 	defer tunnel.Close()
 

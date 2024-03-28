@@ -5,6 +5,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -43,12 +44,15 @@ var (
 				spinner.Fatalf(err, lang.CmdConnectErrCluster, err.Error())
 			}
 
+			ctx, cancel := context.WithTimeout(context.Background(), cluster.DefaultTimeout)
+			defer cancel()
+
 			var tunnel *k8s.Tunnel
 			if connectResourceName != "" {
 				zt := cluster.NewTunnelInfo(connectNamespace, connectResourceType, connectResourceName, "", connectLocalPort, connectRemotePort)
-				tunnel, err = c.ConnectTunnelInfo(zt)
+				tunnel, err = c.ConnectTunnelInfo(ctx, zt)
 			} else {
-				tunnel, err = c.Connect(target)
+				tunnel, err = c.Connect(ctx, target)
 			}
 			if err != nil {
 				spinner.Fatalf(err, lang.CmdConnectErrService, err.Error())
@@ -91,7 +95,12 @@ var (
 		Aliases: []string{"l"},
 		Short:   lang.CmdConnectListShort,
 		Run: func(_ *cobra.Command, _ []string) {
-			cluster.NewClusterOrDie().PrintConnectTable()
+			ctx, cancel := context.WithTimeout(context.Background(), cluster.DefaultTimeout)
+			defer cancel()
+			err := cluster.NewClusterOrDie(ctx).PrintConnectTable(ctx)
+			if err != nil {
+				message.Fatal(err, err.Error())
+			}
 		},
 	}
 )
