@@ -13,15 +13,15 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/defenseunicorns/pkg/helpers"
+	"github.com/defenseunicorns/pkg/oci"
 	"github.com/defenseunicorns/zarf/src/cmd/common"
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
-	"github.com/defenseunicorns/zarf/src/pkg/oci"
 	"github.com/defenseunicorns/zarf/src/pkg/packager"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/sources"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
-	"github.com/defenseunicorns/zarf/src/pkg/utils/helpers"
 	"github.com/defenseunicorns/zarf/src/pkg/zoci"
 	"github.com/defenseunicorns/zarf/src/types"
 
@@ -44,7 +44,7 @@ var initCmd = &cobra.Command{
 		}
 
 		// Continue running package deploy for all components like any other package
-		initPackageName := packager.GetInitPackageName("")
+		initPackageName := sources.GetInitPackageName()
 		pkgConfig.PkgOpts.PackageSource = initPackageName
 
 		// Try to use an init-package in the executable directory if none exist in current working directory
@@ -77,7 +77,7 @@ var initCmd = &cobra.Command{
 
 func findInitPackage(initPackageName string) (string, error) {
 	// First, look for the init package in the current working directory
-	if !utils.InvalidPath(initPackageName) {
+	if !helpers.InvalidPath(initPackageName) {
 		return initPackageName, nil
 	}
 
@@ -87,19 +87,19 @@ func findInitPackage(initPackageName string) (string, error) {
 		return "", err
 	}
 	executableDir := path.Dir(binaryPath)
-	if !utils.InvalidPath(filepath.Join(executableDir, initPackageName)) {
+	if !helpers.InvalidPath(filepath.Join(executableDir, initPackageName)) {
 		return filepath.Join(executableDir, initPackageName), nil
 	}
 
 	// Create the cache directory if it doesn't exist
-	if utils.InvalidPath(config.GetAbsCachePath()) {
-		if err := utils.CreateDirectory(config.GetAbsCachePath(), helpers.ReadExecuteAllWriteUser); err != nil {
+	if helpers.InvalidPath(config.GetAbsCachePath()) {
+		if err := helpers.CreateDirectory(config.GetAbsCachePath(), helpers.ReadExecuteAllWriteUser); err != nil {
 			message.Fatalf(err, lang.CmdInitErrUnableCreateCache, config.GetAbsCachePath())
 		}
 	}
 
 	// Next, look in the cache directory
-	if !utils.InvalidPath(filepath.Join(config.GetAbsCachePath(), initPackageName)) {
+	if !helpers.InvalidPath(filepath.Join(config.GetAbsCachePath(), initPackageName)) {
 		return filepath.Join(config.GetAbsCachePath(), initPackageName), nil
 	}
 
@@ -217,11 +217,10 @@ func init() {
 	// Flags that control how a deployment proceeds
 	// Always require adopt-existing-resources flag (no viper)
 	initCmd.Flags().BoolVar(&pkgConfig.DeployOpts.AdoptExistingResources, "adopt-existing-resources", false, lang.CmdPackageDeployFlagAdoptExistingResources)
-
 	initCmd.Flags().BoolVar(&pkgConfig.DeployOpts.SkipWebhooks, "skip-webhooks", v.GetBool(common.VPkgDeploySkipWebhooks), lang.CmdPackageDeployFlagSkipWebhooks)
-
 	initCmd.Flags().DurationVar(&pkgConfig.DeployOpts.Timeout, "timeout", v.GetDuration(common.VPkgDeployTimeout), lang.CmdPackageDeployFlagTimeout)
 
+	initCmd.Flags().IntVar(&pkgConfig.PkgOpts.Retries, "retries", v.GetInt(common.VPkgRetries), lang.CmdPackageFlagRetries)
 	initCmd.Flags().StringVarP(&pkgConfig.PkgOpts.PublicKeyPath, "key", "k", v.GetString(common.VPkgPublicKey), lang.CmdPackageFlagFlagPublicKey)
 
 	initCmd.Flags().SortFlags = true
