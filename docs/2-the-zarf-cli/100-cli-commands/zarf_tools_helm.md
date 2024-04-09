@@ -29,6 +29,12 @@ Subset of the Helm CLI that includes the repo and dependency commands for managi
       --repository-config string        path to the file containing repository names and URLs
 ```
 
+## Options inherited from parent commands
+
+```
+      --config-path string   Specify the path of the configuration file to use
+```
+
 ## SEE ALSO
 
 * [zarf tools](zarf_tools.md)	 - Collection of additional tools to make airgap easier
