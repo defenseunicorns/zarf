@@ -33,7 +33,7 @@ type deploymentFilter struct {
 
 // Errors for the deployment filter.
 var (
-	ErrMultipleSameGroup    = fmt.Errorf("cannot specify multiple components from the same group")
+	ErrMultipleSameGroup    = fmt.Errorf("cannot specify multiple components")
 	ErrNoDefaultOrSelection = fmt.Errorf("no default or selected component found")
 	ErrNotFound             = fmt.Errorf("no compatible components found")
 	ErrSelectionCanceled    = fmt.Errorf("selection canceled")
@@ -64,7 +64,6 @@ func (f *deploymentFilter) Apply(pkg types.ZarfPackage) ([]types.ZarfComponent, 
 	if isPartial {
 		matchedRequests := map[string]bool{}
 
-		// NOTE: This does not use forIncludedComponents as it takes group, default and required status into account.
 		for _, groupKey := range orderedComponentGroups {
 			var groupDefault *types.ZarfComponent
 			var groupSelected *types.ZarfComponent
@@ -75,7 +74,7 @@ func (f *deploymentFilter) Apply(pkg types.ZarfPackage) ([]types.ZarfComponent, 
 
 				selectState, matchedRequest := includedOrExcluded(component.Name, f.requestedComponents)
 
-				if !component.IsRequired() {
+				if !component.IsRequired(pkg.Metadata.Features) {
 					if selectState == excluded {
 						// If the component was explicitly excluded, record the match and continue
 						matchedRequests[matchedRequest] = true
@@ -95,7 +94,7 @@ func (f *deploymentFilter) Apply(pkg types.ZarfPackage) ([]types.ZarfComponent, 
 
 					// Then check for already selected groups
 					if groupSelected != nil {
-						return nil, fmt.Errorf("%w: group: %s selected: %s, %s", ErrMultipleSameGroup, component.DeprecatedGroup, groupSelected.Name, component.Name)
+						return nil, fmt.Errorf("%w: group: %q selected: %q, %s", ErrMultipleSameGroup, component.DeprecatedGroup, groupSelected.Name, component.Name)
 					}
 
 					// Then append to the final list
@@ -161,7 +160,7 @@ func (f *deploymentFilter) Apply(pkg types.ZarfPackage) ([]types.ZarfComponent, 
 			} else {
 				component := groupedComponents[groupKey][0]
 
-				if component.IsRequired() {
+				if component.IsRequired(pkg.Metadata.Features) {
 					selectedComponents = append(selectedComponents, component)
 					continue
 				}

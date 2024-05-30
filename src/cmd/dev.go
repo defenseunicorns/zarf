@@ -9,16 +9,24 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"strings"
+
+	"github.com/fatih/color"
+	goyaml "github.com/goccy/go-yaml"
+	"github.com/pterm/pterm"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/defenseunicorns/pkg/helpers"
 	"github.com/defenseunicorns/zarf/src/cmd/common"
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
+	"github.com/defenseunicorns/zarf/src/pkg/layout"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/migrations"
 	"github.com/defenseunicorns/zarf/src/pkg/transform"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
@@ -28,6 +36,8 @@ import (
 )
 
 var extractPath string
+var deprecatedMigrationsToRun []string
+var featureMigrationsToRun []string
 
 var devCmd = &cobra.Command{
 	Use:     "dev",
@@ -55,6 +65,89 @@ var devDeployCmd = &cobra.Command{
 
 		if err := pkgClient.DevDeploy(cmd.Context()); err != nil {
 			message.Fatalf(err, lang.CmdDevDeployErr, err.Error())
+		}
+	},
+}
+
+var devMigrateCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: lang.CmdDevMigrateShort,
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(_ *cobra.Command, args []string) {
+		dir := common.SetBaseDirectory(args)
+		var pkg types.ZarfPackage
+		cm := goyaml.CommentMap{}
+
+		before, err := os.ReadFile(filepath.Join(dir, layout.ZarfYAML))
+		if err != nil {
+			message.Fatalf(err, lang.CmdDevMigrateErr, err.Error())
+		}
+
+		if err := goyaml.UnmarshalWithOptions(before, &pkg, goyaml.CommentToMap(cm)); err != nil {
+			message.Fatalf(err, lang.CmdDevMigrateErr, err.Error())
+		}
+
+		data := [][]string{}
+
+		deprecatedMigrationsToRun = slices.Compact(deprecatedMigrationsToRun)
+		for _, m := range migrations.DeprecatedComponentMigrations() {
+			if !slices.Contains(deprecatedMigrationsToRun, m.String()) && len(deprecatedMigrationsToRun) != 0 {
+				continue
+			}
+
+			entry := []string{
+				m.String(),
+				message.ColorWrap("deprecated", color.FgYellow),
+				"",
+			}
+
+			for idx, component := range pkg.Components {
+				mc, _ := m.Run(component)
+				mc = m.Clear(mc)
+				if !reflect.DeepEqual(mc, component) {
+					entry[2] = fmt.Sprintf(".components.[%d]", idx)
+					data = append(data, entry)
+				}
+				pkg.Components[idx] = mc
+			}
+		}
+
+		featureMigrationsToRun = slices.Compact(featureMigrationsToRun)
+		for _, m := range migrations.FeatureMigrations() {
+			if !slices.Contains(featureMigrationsToRun, m.String()) {
+				continue
+			}
+			pkgWithFeature, warning := m.Run(pkg)
+			if warning != "" {
+				message.Warn(warning)
+			}
+			if !reflect.DeepEqual(pkgWithFeature, pkg) {
+				data = append(data, []string{
+					m.String(),
+					message.ColorWrap("feature", color.FgMagenta),
+					".",
+				})
+			}
+			pkg = pkgWithFeature
+		}
+
+		after, err := goyaml.MarshalWithOptions(pkg, goyaml.WithComment(cm), goyaml.IndentSequence(true), goyaml.UseSingleQuote(false))
+		if err != nil {
+			message.Fatalf(err, lang.CmdDevMigrateErr, err.Error())
+		}
+
+		header := []string{
+			"Migration",
+			"Type",
+			"Affected Path(s)",
+		}
+
+		if len(data) == 0 {
+			message.Warn("No changes made")
+		} else {
+			pterm.Println()
+			fmt.Println(string(after))
+			message.Table(header, data)
 		}
 	},
 }
@@ -270,6 +363,7 @@ func init() {
 	rootCmd.AddCommand(devCmd)
 
 	devCmd.AddCommand(devDeployCmd)
+	devCmd.AddCommand(devMigrateCmd)
 	devCmd.AddCommand(devGenerateCmd)
 	devCmd.AddCommand(devTransformGitLinksCmd)
 	devCmd.AddCommand(devSha256SumCmd)
@@ -279,6 +373,38 @@ func init() {
 
 	bindDevDeployFlags(v)
 	bindDevGenerateFlags(v)
+
+	cm := []string{}
+	for _, m := range migrations.DeprecatedComponentMigrations() {
+		cm = append(cm, m.String())
+	}
+	devMigrateCmd.Flags().StringArrayVar(&deprecatedMigrationsToRun, "run", []string{}, fmt.Sprintf("migrations of deprecated features to run (default: all, available: %s)", strings.Join(cm, ", ")))
+	devMigrateCmd.RegisterFlagCompletionFunc("run", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		ids := []string{}
+		for _, m := range migrations.DeprecatedComponentMigrations() {
+			if slices.Contains(deprecatedMigrationsToRun, m.String()) {
+				continue
+			}
+			ids = append(ids, m.String())
+		}
+		return ids, cobra.ShellCompDirectiveNoFileComp
+	})
+
+	fm := []string{}
+	for _, m := range migrations.FeatureMigrations() {
+		fm = append(fm, m.String())
+	}
+	devMigrateCmd.Flags().StringArrayVar(&featureMigrationsToRun, "enable-feature", []string{}, fmt.Sprintf("feature migrations to run and enable (available: %s)", strings.Join(fm, ", ")))
+	devMigrateCmd.RegisterFlagCompletionFunc("enable-feature", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		ids := []string{}
+		for _, m := range migrations.FeatureMigrations() {
+			if slices.Contains(featureMigrationsToRun, m.String()) {
+				continue
+			}
+			ids = append(ids, m.String())
+		}
+		return ids, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	devSha256SumCmd.Flags().StringVarP(&extractPath, "extract-path", "e", "", lang.CmdDevFlagExtractPath)
 

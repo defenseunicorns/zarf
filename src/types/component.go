@@ -5,6 +5,8 @@
 package types
 
 import (
+	"slices"
+
 	"github.com/defenseunicorns/zarf/src/pkg/utils/exec"
 	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/types/extensions"
@@ -82,9 +84,19 @@ func (c ZarfComponent) RequiresCluster() bool {
 }
 
 // IsRequired returns if the component is required or not.
-func (c ZarfComponent) IsRequired() bool {
+//
+// If the `Required` field is set, it will return that value.
+//
+// If the `DefaultRequired` feature flag is present, it will return true.
+//
+// Otherwise, it will return false.
+func (c ZarfComponent) IsRequired(ff []FeatureFlag) bool {
 	if c.Required != nil {
 		return *c.Required
+	}
+
+	if slices.Contains(ff, DefaultRequired) {
+		return true
 	}
 
 	return false

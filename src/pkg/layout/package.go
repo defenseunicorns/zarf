@@ -15,7 +15,7 @@ import (
 	"github.com/defenseunicorns/pkg/helpers"
 	"github.com/defenseunicorns/zarf/src/pkg/interactive"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/migrations"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -69,11 +69,21 @@ func (pp *PackagePaths) ReadZarfYAML() (pkg types.ZarfPackage, warnings []string
 	}
 
 	if len(pkg.Build.Migrations) > 0 {
-		var componentWarnings []string
 		for idx, component := range pkg.Components {
-			// Handle component configuration deprecations
-			pkg.Components[idx], componentWarnings = deprecated.MigrateComponent(pkg.Build, component)
-			warnings = append(warnings, componentWarnings...)
+			// Clear out component configuration migrations
+			for _, m := range migrations.DeprecatedComponentMigrations() {
+				if slices.Contains(pkg.Build.Migrations, m.String()) {
+					mc := m.Clear(component)
+					pkg.Components[idx] = mc
+				}
+			}
+		}
+	}
+
+	for _, component := range pkg.Components {
+		// Show a warning if the component contains a group as that has been deprecated and will be removed.
+		if component.DeprecatedGroup != "" {
+			warnings = append(warnings, fmt.Sprintf("Component %s is using group which has been deprecated and will be removed in v1.0.0.  Please migrate to another solution.", component.Name))
 		}
 	}
 

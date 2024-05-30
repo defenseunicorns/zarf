@@ -1060,6 +1060,13 @@
         "aggregateChecksum": {
           "type": "string",
           "description": "Checksum of a checksums.txt file that contains checksums all the layers within the package."
+        },
+        "features": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "List of feature flags to enable for this package"
         }
       },
       "additionalProperties": false,

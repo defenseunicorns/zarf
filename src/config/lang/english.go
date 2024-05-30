@@ -360,6 +360,19 @@ $ zarf package pull oci://ghcr.io/defenseunicorns/packages/dos-games:1.0.0 -a sk
 	CmdDevDeployFlagNoYolo = "Disable the YOLO mode default override and create / deploy the package as-defined"
 	CmdDevDeployErr        = "Failed to dev deploy: %s"
 
+	CmdDevMigrateShort   = "[alpha] Migrates the zarf.yaml in a given directory to the latest version of the zarf.yaml format"
+	CmdDevMigrateExample = `
+# Migrate the zarf.yaml in the current directory
+$ zarf dev migrate .
+
+# Run specific migrations
+$ zarf dev migrate --run scripts-to-actions --run pluralize-set-variable .
+
+# Enable feature flag(s) and run migrations
+$ zarf dev migrate --enable-feature default-required .
+`
+	CmdDevMigrateErr = "Failed to migrate: %s"
+
 	CmdDevGenerateShort   = "[alpha] Creates a zarf.yaml automatically from a given remote (git) Helm chart"
 	CmdDevGenerateExample = "zarf dev generate podinfo --url https://github.com/stefanprodan/podinfo.git --version 6.4.0 --gitPath charts/podinfo"
 
@@ -687,6 +700,7 @@ const (
 
 // Package validate
 const (
+	PkgValidateErrBetaFeatureNotFound     = "feature %q not found, available: %s"
 	PkgValidateTemplateDeprecation        = "Package template %q is using the deprecated syntax ###ZARF_PKG_VAR_%s###. This will be removed in Zarf v1.0.0. Please update to ###ZARF_PKG_TMPL_%s###."
 	PkgValidateMustBeUppercase            = "variable name %q must be all uppercase and contain no special characters except _"
 	PkgValidateErrAction                  = "invalid action: %w"
@@ -704,6 +718,7 @@ const (
 	PkgValidateErrComponentLocalOS        = "component %q contains a localOS value that is not supported: %s (supported: %s)"
 	PkgValidateErrComponentNameNotUnique  = "component name %q is not unique"
 	PkgValidateErrComponent               = "invalid component %q: %w"
+	PkgValidateErrComponentMissingGroup   = "component %q cannot use default without a group"
 	PkgValidateErrComponentReqDefault     = "component %q cannot be both required and default"
 	PkgValidateErrComponentReqGrouped     = "component %q cannot be both required and grouped"
 	PkgValidateErrComponentYOLO           = "component %q incompatible with the online-only package flag (metadata.yolo): %w"

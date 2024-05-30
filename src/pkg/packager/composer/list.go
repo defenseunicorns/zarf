@@ -13,7 +13,7 @@ import (
 	"github.com/defenseunicorns/pkg/helpers"
 	"github.com/defenseunicorns/zarf/src/extensions/bigbang"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/migrations"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/pkg/zoci"
@@ -257,12 +257,16 @@ func (ic *ImportChain) String() string {
 }
 
 // Migrate performs migrations on the import chain
-func (ic *ImportChain) Migrate(build types.ZarfBuildData) (warnings []string) {
+func (ic *ImportChain) Migrate() (warnings []string) {
 	node := ic.head
 	for node != nil {
-		migrated, w := deprecated.MigrateComponent(build, node.ZarfComponent)
-		node.ZarfComponent = migrated
-		warnings = append(warnings, w...)
+		for _, m := range migrations.DeprecatedComponentMigrations() {
+			migrated, warning := m.Run(node.ZarfComponent)
+			node.ZarfComponent = migrated
+			if warning != "" {
+				warnings = append(warnings, warning)
+			}
+		}
 		node = node.next
 	}
 	if len(warnings) > 0 {

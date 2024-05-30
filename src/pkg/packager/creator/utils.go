@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/defenseunicorns/zarf/src/config"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/migrations"
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
@@ -43,10 +43,10 @@ func recordPackageMetadata(pkg *types.ZarfPackage, createOpts types.ZarfCreateOp
 	// Record the time of package creation.
 	pkg.Build.Timestamp = now.Format(time.RFC1123Z)
 
-	// Record the migrations that will be ran on the package.
-	pkg.Build.Migrations = []string{
-		deprecated.ScriptsToActionsMigrated,
-		deprecated.PluralizeSetVariable,
+	// Record the migrations that will run on the package.
+	pkg.Build.Migrations = []string{}
+	for _, m := range migrations.DeprecatedComponentMigrations() {
+		pkg.Build.Migrations = append(pkg.Build.Migrations, m.String())
 	}
 
 	// Record the flavor of Zarf used to build this package (if any).
@@ -55,7 +55,7 @@ func recordPackageMetadata(pkg *types.ZarfPackage, createOpts types.ZarfCreateOp
 	pkg.Build.RegistryOverrides = createOpts.RegistryOverrides
 
 	// Record the latest version of Zarf without breaking changes to the package structure.
-	pkg.Build.LastNonBreakingVersion = deprecated.LastNonBreakingVersion
+	pkg.Build.LastNonBreakingVersion = migrations.LastNonBreakingVersion
 
 	return nil
 }
