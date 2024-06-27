@@ -169,16 +169,8 @@ func (p *Packager) removeComponent(ctx context.Context, deployedPackage *types.D
 		return t.Name == deployedComponent.Name
 	})
 
-	onRemove := c.Actions.OnRemove
-	onFailure := func() {
-		if err := actions.Run(onRemove.Defaults, onRemove.OnFailure, nil); err != nil {
-			message.Debugf("Unable to run the failure action: %s", err)
-		}
-	}
-
-	if err := actions.Run(onRemove.Defaults, onRemove.Before, nil); err != nil {
-		onFailure()
-		return nil, fmt.Errorf("unable to run the before action for component (%s): %w", c.Name, err)
+	if err := actions.Run(ctx, c.Actions, types.BeforeRemove, nil); err != nil {
+		return nil, fmt.Errorf("unable to run %s action: %w", string(types.BeforeRemove), err)
 	}
 
 	for _, chart := range helpers.Reverse(deployedComponent.InstalledCharts) {
@@ -187,7 +179,6 @@ func (p *Packager) removeComponent(ctx context.Context, deployedPackage *types.D
 		helmCfg := helm.NewClusterOnly(p.cfg, p.variableConfig, p.state, p.cluster)
 		if err := helmCfg.RemoveChart(chart.Namespace, chart.ChartName, spinner); err != nil {
 			if !errors.Is(err, driver.ErrReleaseNotFound) {
-				onFailure()
 				return deployedPackage, fmt.Errorf("unable to uninstall the helm chart %s in the namespace %s: %w",
 					chart.ChartName, chart.Namespace, err)
 			}
@@ -208,14 +199,8 @@ func (p *Packager) removeComponent(ctx context.Context, deployedPackage *types.D
 		}
 	}
 
-	if err := actions.Run(onRemove.Defaults, onRemove.After, nil); err != nil {
-		onFailure()
-		return deployedPackage, fmt.Errorf("unable to run the after action: %w", err)
-	}
-
-	if err := actions.Run(onRemove.Defaults, onRemove.OnSuccess, nil); err != nil {
-		onFailure()
-		return deployedPackage, fmt.Errorf("unable to run the success action: %w", err)
+	if err := actions.Run(ctx, c.Actions, types.AfterRemove, nil); err != nil {
+		return nil, fmt.Errorf("unable to run %s action: %w", string(types.AfterRemove), err)
 	}
 
 	// Remove the component we just removed from the array
