@@ -10,54 +10,54 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/agnivade/levenshtein v1.1.1
 	github.com/anchore/clio v0.0.0-20240408173007-3c4abf89e72f
-	github.com/anchore/stereoscope v0.0.1
-	github.com/anchore/syft v0.100.0
+	github.com/anchore/stereoscope v0.0.2
+	github.com/anchore/syft v0.105.1
 	github.com/defenseunicorns/pkg/helpers/v2 v2.0.1
 	github.com/defenseunicorns/pkg/kubernetes v0.2.0
 	github.com/defenseunicorns/pkg/oci v1.0.1
-	github.com/derailed/k9s v0.31.7
-	github.com/distribution/reference v0.5.0
-	github.com/fairwindsops/pluto/v5 v5.18.4
-	github.com/fatih/color v1.16.0
+	github.com/derailed/k9s v0.32.5
+	github.com/distribution/reference v0.6.0
+	github.com/fairwindsops/pluto/v5 v5.19.4
+	github.com/fatih/color v1.17.0
 	github.com/fluxcd/helm-controller/api v0.37.4
 	github.com/fluxcd/pkg/apis/meta v1.5.0
 	github.com/fluxcd/source-controller/api v1.3.0
-	github.com/go-git/go-git/v5 v5.11.0
+	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccy/go-yaml v1.11.3
-	github.com/gofrs/flock v0.8.1
-	github.com/google/go-containerregistry v0.19.0
+	github.com/gofrs/flock v0.11.0
+	github.com/google/go-containerregistry v0.19.2
 	github.com/gosuri/uitable v0.0.4
 	github.com/invopop/jsonschema v0.12.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/moby/moby v24.0.9+incompatible
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.18.0
-	github.com/pterm/pterm v0.12.78
+	github.com/prometheus/client_golang v1.19.1
+	github.com/pterm/pterm v0.12.79
 	github.com/sergi/go-diff v1.3.1
 	github.com/sigstore/cosign/v2 v2.2.3
-	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.1
-	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.1
-	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.1
-	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.1
-	github.com/spf13/cobra v1.8.0
+	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.6
+	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.6
+	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.6
+	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.6
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.24.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/term v0.21.0
-	helm.sh/helm/v3 v3.14.2
-	k8s.io/api v0.30.0
-	k8s.io/apimachinery v0.30.0
-	k8s.io/client-go v0.30.0
-	k8s.io/component-base v0.30.0
-	k8s.io/klog/v2 v2.120.1
-	k8s.io/kubectl v0.29.1
+	helm.sh/helm/v3 v3.15.2
+	k8s.io/api v0.30.2
+	k8s.io/apimachinery v0.30.2
+	k8s.io/client-go v0.30.2
+	k8s.io/component-base v0.30.2
+	k8s.io/klog/v2 v2.130.1
+	k8s.io/kubectl v0.30.2
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/cli-utils v0.36.0
-	sigs.k8s.io/kustomize/api v0.16.0
+	sigs.k8s.io/kustomize/api v0.17.2
 	sigs.k8s.io/kustomize/kyaml v0.16.0
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -348,7 +348,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/microsoft/go-rustaudit v0.0.0-20220730194248-4b17361d90a5 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
-	github.com/mikefarah/yq/v4 v4.43.1
+	github.com/mikefarah/yq/v4 v4.44.2
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
