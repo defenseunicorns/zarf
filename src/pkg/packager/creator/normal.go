@@ -61,7 +61,8 @@ func NewPackageCreator(createOpts types.ZarfCreateOptions, cwd string) *PackageC
 }
 
 // LoadPackageDefinition loads and configures a zarf.yaml file during package create.
-func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []string, err error) {
+// Use LoadPackageDefinitionWithValidate unless there is a specific reason to skip validation or run validation separately
+func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	pkg, warnings, err = src.ReadZarfYAML()
 	if err != nil {
 		return types.ZarfPackage{}, nil, err
@@ -74,7 +75,6 @@ func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout
 	if err != nil {
 		return types.ZarfPackage{}, nil, err
 	}
-
 	warnings = append(warnings, composeWarnings...)
 
 	// After components are composed, template the active package.
@@ -119,11 +119,17 @@ func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout
 		}
 	}
 
-	if err := pkg.Validate(); err != nil {
-		return types.ZarfPackage{}, nil, err
-	}
-
 	return pkg, warnings, nil
+}
+
+// Validate ensures that the package is valid
+func (pc *PackageCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
+	return validate(pc.createOpts, pkg)
+}
+
+// LoadPackageDefinitionWithValidate loads and validates a zarf.yaml file during package create
+func (pc *PackageCreator) LoadPackageDefinitionWithValidate(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
+	return loadWithValidate(ctx, pc, src)
 }
 
 // Assemble assembles all of the package assets into Zarf's tmp directory layout.

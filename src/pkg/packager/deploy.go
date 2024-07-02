@@ -78,7 +78,7 @@ func (p *Packager) Deploy(ctx context.Context) (err error) {
 		return err
 	}
 
-	var sbomWarnings []string
+	var sbomWarnings []types.PackageFinding
 	p.sbomViewFiles, sbomWarnings, err = p.layout.SBOMs.StageSBOMViewFiles()
 	if err != nil {
 		return err

@@ -6,16 +6,33 @@ package creator
 
 import (
 	"context"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoadPackageDefinition(t *testing.T) {
-	t.Parallel()
+type mockSchemaLoader struct {
+	b []byte
+}
+
+func (m *mockSchemaLoader) ReadFile(_ string) ([]byte, error) {
+	return m.b, nil
+}
+
+// Satisfy fs.ReadFileFS interface
+func (m *mockSchemaLoader) Open(_ string) (fs.File, error) {
+	return nil, nil
+}
+
+func TestLoadPackageDefinitionWithValidate(t *testing.T) {
+	// TODO once creator is refactored to not expect to be in the same directory as the zarf.yaml file
+	// this test can be re-parallelized
 	tests := []struct {
 		name        string
 		testDir     string
@@ -31,7 +48,7 @@ func TestLoadPackageDefinition(t *testing.T) {
 		{
 			name:        "invalid package definition",
 			testDir:     "invalid",
-			expectedErr: "package must have at least 1 component",
+			expectedErr: "found errors in package",
 			creator:     NewPackageCreator(types.ZarfCreateOptions{}, ""),
 		},
 		{
@@ -43,18 +60,29 @@ func TestLoadPackageDefinition(t *testing.T) {
 		{
 			name:        "invalid package definition",
 			testDir:     "invalid",
-			expectedErr: "package must have at least 1 component",
+			expectedErr: "found errors in package",
 			creator:     NewSkeletonCreator(types.ZarfCreateOptions{}, types.ZarfPublishOptions{}),
 		},
 	}
+	b, err := os.ReadFile("../../../../zarf.schema.json")
+	require.NoError(t, err)
+	schema.ZarfSchema = &mockSchemaLoader{b: b}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			cwd, err := os.Getwd()
+			require.NoError(t, err)
+			defer func() {
+				err = os.Chdir(cwd)
+				require.NoError(t, err)
+			}()
+			path := filepath.Join("testdata", tt.testDir)
+			err = os.Chdir(path)
+			require.NoError(t, err)
 
-			src := layout.New(filepath.Join("testdata", tt.testDir))
-			pkg, _, err := tt.creator.LoadPackageDefinition(context.Background(), src)
+			src := layout.New(".")
+			pkg, _, err := tt.creator.LoadPackageDefinitionWithValidate(context.Background(), src)
 
 			if tt.expectedErr == "" {
 				require.NoError(t, err)

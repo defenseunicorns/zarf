@@ -58,7 +58,7 @@ func (p *Packager) Publish(ctx context.Context) (err error) {
 			return err
 		}
 
-		p.cfg.Pkg, p.warnings, err = sc.LoadPackageDefinition(ctx, p.layout)
+		p.cfg.Pkg, p.warnings, err = sc.LoadPackageDefinitionWithValidate(ctx, p.layout)
 		if err != nil {
 			return err
 		}

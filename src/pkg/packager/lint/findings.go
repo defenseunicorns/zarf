@@ -5,9 +5,60 @@
 package lint
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/defenseunicorns/pkg/helpers/v2"
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/types"
+	"github.com/fatih/color"
 )
+
+func itemizedDescription(description string, item string) string {
+	if item == "" {
+		return description
+	}
+	return fmt.Sprintf("%s - %s", description, item)
+}
+
+func colorWrapSev(s types.Severity) string {
+	if s == types.SevErr {
+		return message.ColorWrap("Error", color.FgRed)
+	} else if s == types.SevWarn {
+		return message.ColorWrap("Warning", color.FgYellow)
+	}
+	return "unknown"
+}
+
+// PrintFindings prints the findings of the given severity in a table
+func PrintFindings(findings []types.PackageFinding, severity types.Severity, baseDir string, packageName string) {
+	// TODO add filter sev function
+	mapOfFindingsByPath := GroupFindingsByPath(findings, severity, packageName)
+	if len(mapOfFindingsByPath) == 0 {
+		return
+	}
+
+	header := []string{"Type", "Path", "Message"}
+
+	for _, findings := range mapOfFindingsByPath {
+		lintData := [][]string{}
+		for _, finding := range findings {
+			lintData = append(lintData, []string{
+				colorWrapSev(finding.Severity),
+				message.ColorWrap(finding.YqPath, color.FgCyan),
+				itemizedDescription(finding.Description, finding.Item),
+			})
+		}
+		var packagePathFromUser string
+		if helpers.IsOCIURL(findings[0].PackagePathOverride) {
+			packagePathFromUser = findings[0].PackagePathOverride
+		} else {
+			packagePathFromUser = filepath.Join(baseDir, findings[0].PackagePathOverride)
+		}
+		message.Notef("Linting package %q at %s", findings[0].PackageNameOverride, packagePathFromUser)
+		message.Table(header, lintData)
+	}
+}
 
 // GroupFindingsByPath groups findings by their package path
 func GroupFindingsByPath(findings []types.PackageFinding, severity types.Severity, packageName string) map[string][]types.PackageFinding {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/defenseunicorns/zarf/src/cmd"
 	"github.com/defenseunicorns/zarf/src/config"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
 )
 
 //go:embed cosign.pub
@@ -41,6 +41,6 @@ func main() {
 	}()
 
 	config.CosignPublicKey = cosignPublicKey
-	lint.ZarfSchema = zarfSchema
+	schema.ZarfSchema = zarfSchema
 	cmd.Execute(ctx)
 }

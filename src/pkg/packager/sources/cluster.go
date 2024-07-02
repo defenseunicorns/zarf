@@ -46,7 +46,7 @@ type ClusterSource struct {
 // LoadPackage loads a package from a cluster.
 //
 // This is not implemented.
-func (s *ClusterSource) LoadPackage(_ context.Context, _ *layout.PackagePaths, _ filters.ComponentFilterStrategy, _ bool) (types.ZarfPackage, []string, error) {
+func (s *ClusterSource) LoadPackage(_ context.Context, _ *layout.PackagePaths, _ filters.ComponentFilterStrategy, _ bool) (types.ZarfPackage, []types.PackageFinding, error) {
 	return types.ZarfPackage{}, nil, fmt.Errorf("not implemented")
 }
 
@@ -58,7 +58,7 @@ func (s *ClusterSource) Collect(_ context.Context, _ string) (string, error) {
 }
 
 // LoadPackageMetadata loads package metadata from a cluster.
-func (s *ClusterSource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, _ bool, _ bool) (types.ZarfPackage, []string, error) {
+func (s *ClusterSource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, _ bool, _ bool) (types.ZarfPackage, []types.PackageFinding, error) {
 	dpkg, err := s.GetDeployedPackage(ctx, s.PackageSource)
 	if err != nil {
 		return types.ZarfPackage{}, nil, err

@@ -43,7 +43,8 @@ func NewSkeletonCreator(createOpts types.ZarfCreateOptions, publishOpts types.Za
 }
 
 // LoadPackageDefinition loads and configure a zarf.yaml file when creating and publishing a skeleton package.
-func (sc *SkeletonCreator) LoadPackageDefinition(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []string, err error) {
+// Use LoadPackageDefinitionWithValidate unless there is a specific reason to skip validation or run validation separately
+func (sc *SkeletonCreator) LoadPackageDefinition(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	pkg, warnings, err = src.ReadZarfYAML()
 	if err != nil {
 		return types.ZarfPackage{}, nil, err
@@ -67,14 +68,20 @@ func (sc *SkeletonCreator) LoadPackageDefinition(ctx context.Context, src *layou
 	}
 
 	for _, warning := range warnings {
-		message.Warn(warning)
-	}
-
-	if err := pkg.Validate(); err != nil {
-		return types.ZarfPackage{}, nil, err
+		message.Warn(warning.Description)
 	}
 
 	return pkg, warnings, nil
+}
+
+// Validate ensures that the package is valid
+func (sc *SkeletonCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
+	return validate(sc.createOpts, pkg)
+}
+
+// LoadPackageDefinitionWithValidate loads and validates the zarf package
+func (sc *SkeletonCreator) LoadPackageDefinitionWithValidate(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
+	return loadWithValidate(ctx, sc, src)
 }
 
 // Assemble updates all components of the loaded Zarf package with necessary modifications for package assembly.

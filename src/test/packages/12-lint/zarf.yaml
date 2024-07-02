@@ -20,9 +20,8 @@ components:
     images:
     - registry.com:9001/whatever/image:1.0.0
     - busybox@sha256:3fbc632167424a6d997e74f52b878d7cc478225cffac6bc977eedfe51c7f4e79
-    - busybox:###ZARF_PKG_VAR_WHATEVER_IMAGE###
     - busybox:###ZARF_PKG_TMPL_BUSYBOX_IMAGE###
-    - ubuntu:###ZARF_PKG_TMPL_UBUNTU_IMAGE###
+    - busybox:###ZARF_PKG_VAR_BUSYBOX_IMAGE###
     files:
     - source: https://github.com/k3s-io/k3s/releases/download/v1.28.2+k3s1/k3s
       shasum: 2f041d37a2c6d54d53e106e1c7713bc48f806f3919b0d9e092f5fcbdc55b41cf
@@ -35,7 +34,7 @@ components:
       url: oci://🦄/dos-games:1.0.0
       name: baseline
 
-  - name: oci-games-url
+  - name: oci-games
     import:
       path: linted-import
 

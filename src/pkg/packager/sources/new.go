@@ -31,10 +31,10 @@ import (
 //	`sources.ValidatePackageSignature` and `sources.ValidatePackageIntegrity` can be leveraged for this purpose.
 type PackageSource interface {
 	// LoadPackage loads a package from a source.
-	LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []string, err error)
+	LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error)
 
 	// LoadPackageMetadata loads a package's metadata from a source.
-	LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []string, err error)
+	LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error)
 
 	// Collect relocates a package from its source to a tarball in a given destination directory.
 	Collect(ctx context.Context, destinationDirectory string) (tarball string, err error)

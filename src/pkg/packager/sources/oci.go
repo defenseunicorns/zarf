@@ -34,7 +34,7 @@ type OCISource struct {
 }
 
 // LoadPackage loads a package from an OCI registry.
-func (s *OCISource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *OCISource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	message.Debugf("Loading package from %q", s.PackageSource)
 
 	pkg, err = s.FetchZarfYAML(ctx)
@@ -106,11 +106,11 @@ func (s *OCISource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, f
 		}
 	}
 
-	return pkg, warnings, nil
+	return pkg, nil, nil
 }
 
 // LoadPackageMetadata loads a package's metadata from an OCI registry.
-func (s *OCISource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *OCISource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	toPull := zoci.PackageAlwaysPull
 	if wantSBOM {
 		toPull = append(toPull, layout.SBOMTar)

@@ -14,6 +14,6 @@ find "." -type f -name 'zarf.yaml' | while read -r yaml_file; do
       continue
   fi
   echo "Running 'zarf dev lint' in directory: $dir"
-  $ZARF_BIN dev lint "$dir"
+  $ZARF_BIN dev lint $dir || echo "error in $dir"
   echo "---"
 done

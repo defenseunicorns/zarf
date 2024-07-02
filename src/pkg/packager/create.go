@@ -35,7 +35,7 @@ func (p *Packager) Create(ctx context.Context) (err error) {
 		return err
 	}
 
-	p.cfg.Pkg, p.warnings, err = pc.LoadPackageDefinition(ctx, p.layout)
+	p.cfg.Pkg, p.warnings, err = pc.LoadPackageDefinitionWithValidate(ctx, p.layout)
 	if err != nil {
 		return err
 	}

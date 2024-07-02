@@ -28,7 +28,7 @@ func (p *Packager) Mirror(ctx context.Context) (err error) {
 		return fmt.Errorf("unable to load the package: %w", err)
 	}
 
-	var sbomWarnings []string
+	var sbomWarnings []types.PackageFinding
 	p.sbomViewFiles, sbomWarnings, err = p.layout.SBOMs.StageSBOMViewFiles()
 	if err != nil {
 		return err

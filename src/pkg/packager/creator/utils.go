@@ -5,14 +5,49 @@
 package creator
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"time"
 
 	"github.com/defenseunicorns/zarf/src/config"
+	"github.com/defenseunicorns/zarf/src/pkg/layout"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
 	"github.com/defenseunicorns/zarf/src/types"
 )
+
+func validate(createOpts types.ZarfCreateOptions, pkg types.ZarfPackage) error {
+	if err := pkg.Validate(); err != nil {
+		return fmt.Errorf("package validation failed: %w", err)
+	}
+
+	findings, err := schema.Validate()
+	if err != nil {
+		return fmt.Errorf("unable to check schema: %w", err)
+	}
+
+	lint.PrintFindings(findings, types.SevErr, createOpts.BaseDir, pkg.Metadata.Name)
+	if lint.HasSeverity(findings, types.SevErr) {
+		return fmt.Errorf("found errors in package")
+	}
+
+	return nil
+}
+
+func loadWithValidate(ctx context.Context, c Creator, src *layout.PackagePaths) (types.ZarfPackage, []types.PackageFinding, error) {
+	pkg, warnings, err := c.LoadPackageDefinition(ctx, src)
+	if err != nil {
+		return types.ZarfPackage{}, nil, err
+	}
+	err = c.Validate(ctx, pkg)
+	if err != nil {
+		return types.ZarfPackage{}, nil, err
+	}
+	return pkg, warnings, err
+}
 
 // recordPackageMetadata records various package metadata during package create.
 func recordPackageMetadata(pkg *types.ZarfPackage, createOpts types.ZarfCreateOptions) error {

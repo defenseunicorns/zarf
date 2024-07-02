@@ -35,7 +35,7 @@ type Packager struct {
 	state          *types.ZarfState
 	cluster        *cluster.Cluster
 	layout         *layout.PackagePaths
-	warnings       []string
+	warnings       []types.PackageFinding
 	hpaModified    bool
 	connectStrings types.ConnectStrings
 	sbomViewFiles  []string
@@ -251,7 +251,7 @@ func (p *Packager) validateLastNonBreakingVersion() (err error) {
 	cliSemVer, err := semver.NewVersion(cliVersion)
 	if err != nil {
 		warning := fmt.Sprintf(lang.CmdPackageDeployInvalidCLIVersionWarn, config.CLIVersion)
-		p.warnings = append(p.warnings, warning)
+		p.warnings = append(p.warnings, types.PackageFinding{Description: warning, Severity: types.SevWarn})
 		return nil
 	}
 
@@ -262,7 +262,7 @@ func (p *Packager) validateLastNonBreakingVersion() (err error) {
 			lastNonBreakingVersion,
 			lastNonBreakingVersion,
 		)
-		p.warnings = append(p.warnings, warning)
+		p.warnings = append(p.warnings, types.PackageFinding{Description: warning, Severity: types.SevWarn})
 	}
 
 	return nil

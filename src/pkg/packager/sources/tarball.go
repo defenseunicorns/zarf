@@ -33,7 +33,7 @@ type TarballSource struct {
 }
 
 // LoadPackage loads a package from a tarball.
-func (s *TarballSource) LoadPackage(_ context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *TarballSource) LoadPackage(_ context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	spinner := message.NewProgressSpinner("Loading package from %q", s.PackageSource)
 	defer spinner.Stop()
 
@@ -138,7 +138,7 @@ func (s *TarballSource) LoadPackage(_ context.Context, dst *layout.PackagePaths,
 }
 
 // LoadPackageMetadata loads a package's metadata from a tarball.
-func (s *TarballSource) LoadPackageMetadata(_ context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *TarballSource) LoadPackageMetadata(_ context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	if s.Shasum != "" {
 		if err := helpers.SHAsMatch(s.PackageSource, s.Shasum); err != nil {
 			return pkg, nil, err

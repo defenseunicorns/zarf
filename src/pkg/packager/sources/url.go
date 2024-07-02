@@ -51,7 +51,7 @@ func (s *URLSource) Collect(_ context.Context, dir string) (string, error) {
 }
 
 // LoadPackage loads a package from an http, https or sget URL.
-func (s *URLSource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *URLSource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, filter filters.ComponentFilterStrategy, unarchiveAll bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	tmp, err := utils.MakeTempDir(config.CommonOptions.TempDirectory)
 	if err != nil {
 		return pkg, nil, err
@@ -75,7 +75,7 @@ func (s *URLSource) LoadPackage(ctx context.Context, dst *layout.PackagePaths, f
 }
 
 // LoadPackageMetadata loads a package's metadata from an http, https or sget URL.
-func (s *URLSource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []string, err error) {
+func (s *URLSource) LoadPackageMetadata(ctx context.Context, dst *layout.PackagePaths, wantSBOM bool, skipValidation bool) (pkg types.ZarfPackage, warnings []types.PackageFinding, err error) {
 	tmp, err := utils.MakeTempDir(config.CommonOptions.TempDirectory)
 	if err != nil {
 		return pkg, nil, err

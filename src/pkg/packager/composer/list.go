@@ -257,19 +257,30 @@ func (ic *ImportChain) String() string {
 }
 
 // Migrate performs migrations on the import chain
-func (ic *ImportChain) Migrate(build types.ZarfBuildData) (warnings []string) {
+func (ic *ImportChain) Migrate(build types.ZarfBuildData) (packageErrors []types.PackageFinding) {
 	node := ic.head
+	var warnings []string
 	for node != nil {
-		migrated, w := deprecated.MigrateComponent(build, node.ZarfComponent)
-		node.ZarfComponent = migrated
-		warnings = append(warnings, w...)
+		node.ZarfComponent, warnings = deprecated.MigrateComponent(build, node.ZarfComponent)
+		for _, warning := range warnings {
+			packageErrors = append(packageErrors, types.PackageFinding{
+				Description:         warning,
+				PackagePathOverride: node.relativeToHead,
+				PackageNameOverride: node.originalPackageName,
+				YqPath:              fmt.Sprintf("components.[%d]", node.index),
+				Severity:            types.SevWarn,
+			})
+		}
 		node = node.next
 	}
 	if len(warnings) > 0 {
-		final := fmt.Sprintf("Migrations were performed on the import chain of: %q", ic.head.Name)
-		warnings = append(warnings, final)
+		migrationWarning := types.PackageFinding{
+			Description: fmt.Sprintf("Migrations were performed on the import chain of: %q", ic.head.Name),
+			Severity:    types.SevWarn,
+		}
+		packageErrors = append(packageErrors, migrationWarning)
 	}
-	return warnings
+	return packageErrors
 }
 
 // Compose merges the import chain into a single component
