@@ -16,8 +16,8 @@
     "link-check": "linkinator --recurse dist/ --config linkinator.config.json"
   },
   "dependencies": {
-    "@astrojs/check": "^0.5.10",
-    "@astrojs/starlight": "^0.21.2",
+    "@astrojs/check": "^0.7.0",
+    "@astrojs/starlight": "^0.24.0",
     "@fontsource/source-code-pro": "^5.0.17",
     "astro": "^4.5.12",
     "mermaid": "^10.9.0",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "linkinator": "^6.0.5",
-    "markdownlint-cli2": "^0.12.1",
+    "markdownlint-cli2": "^0.13.0",
     "remark-gemoji": "^8.0.0",
     "yaml": "^2.4.1"
   },
