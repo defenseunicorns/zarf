@@ -372,10 +372,10 @@ github.com/aliyun/credentials-go v1.3.1 h1:uq/0v7kWrxmoLGpqjx7vtQ/s03f0zR//0br/x
 github.com/aliyun/credentials-go v1.3.1/go.mod h1:8jKYhQuDawt8x2+fusqa1Y6mPxemTsBEN04dgcAcYz0=
 github.com/anchore/bubbly v0.0.0-20231115134915-def0aba654a9 h1:p0ZIe0htYOX284Y4axJaGBvXHU0VCCzLN5Wf5XbKStU=
 github.com/anchore/bubbly v0.0.0-20231115134915-def0aba654a9/go.mod h1:3ZsFB9tzW3vl4gEiUeuSOMDnwroWxIxJelOOHUp8dSw=
-github.com/anchore/clio v0.0.0-20240408173007-3c4abf89e72f h1:2xJPf4KWzxFDwZK/yax+h8QHP2Gnn4fgXUCCeizhbyU=
-github.com/anchore/clio v0.0.0-20240408173007-3c4abf89e72f/go.mod h1:1k7cwq2CeVH9dgAl0X/JBBfJ4y/E8h2R9KqByDkrCA4=
-github.com/anchore/fangs v0.0.0-20231201140849-5075d28d6d8b h1:L/djgY7ZbZ/38+wUtdkk398W3PIBJLkt1N8nU/7e47A=
-github.com/anchore/fangs v0.0.0-20231201140849-5075d28d6d8b/go.mod h1:TLcE0RE5+8oIx2/NPWem/dq1DeaMoC+fPEH7hoSzPLo=
+github.com/anchore/clio v0.0.0-20240606161808-779b8d1ce2db h1:MVP0gnGl728eJbg63ul6mVK1yxMmBOh6htdLvbdYyuo=
+github.com/anchore/clio v0.0.0-20240606161808-779b8d1ce2db/go.mod h1:W/GL6ouyesvNnHFEiXjB12tfVhnEX0k1BtyRek/XSYk=
+github.com/anchore/fangs v0.0.0-20240508143433-f016b099950f h1:NOhzafCyNYFi88qxkBFjMzQo4dRa1vDhBzx+0Uovx8Q=
+github.com/anchore/fangs v0.0.0-20240508143433-f016b099950f/go.mod h1:sVpRS2yNCw6tLVpvA1QSDVWTJVpCuAm8JNZgn4Sjz/k=
 github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a h1:nJ2G8zWKASyVClGVgG7sfM5mwoZlZ2zYpIzN2OhjWkw=
 github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a/go.mod h1:ubLFmlsv8/DFUQrZwY5syT5/8Er3ugSr4rDFwHsE3hg=
 github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb h1:iDMnx6LIjtjZ46C0akqveX83WFzhpTD3eqOthawb5vU=
