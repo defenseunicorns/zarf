@@ -70,10 +70,10 @@ func (p *Packager) FindImages(ctx context.Context) (map[string][]string, error) 
 		message.Warn(warning)
 	}
 
-	return p.findImages()
+	return p.findImages(ctx)
 }
 
-func (p *Packager) findImages() (imgMap map[string][]string, err error) {
+func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, err error) {
 	repoHelmChartPath := p.cfg.FindImagesOpts.RepoHelmChartPath
 	kubeVersionOverride := p.cfg.FindImagesOpts.KubeVersionOverride
 	whyImage := p.cfg.FindImagesOpts.Why
@@ -185,7 +185,7 @@ func (p *Packager) findImages() (imgMap map[string][]string, err error) {
 			}
 
 			// Generate helm templates for this chart
-			chartTemplate, chartValues, err := helmCfg.TemplateChart()
+			chartTemplate, chartValues, err := helmCfg.TemplateChart(ctx)
 			if err != nil {
 				message.WarnErrf(err, "Problem rendering the helm template for %s: %s", chart.Name, err.Error())
 				erroredCharts = append(erroredCharts, chart.Name)
