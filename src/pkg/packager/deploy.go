@@ -45,10 +45,12 @@ var (
 )
 
 func (p *Packager) resetRegistryHPA(ctx context.Context) {
-	if p.isConnectedToCluster() && p.hpaModified {
-		if err := p.cluster.EnableRegHPAScaleDown(ctx); err != nil {
-			message.Debugf("unable to reenable the registry HPA scale down: %s", err.Error())
-		}
+	if !p.isConnectedToCluster() {
+		return
+	}
+	err := p.cluster.EnableRegHPAScaleDown(ctx)
+	if err != nil {
+		message.Debugf("unable to reenable the registry HPA scale down: %s", err.Error())
 	}
 }
 
@@ -111,7 +113,6 @@ func (p *Packager) Deploy(ctx context.Context) error {
 		}
 	}
 
-	p.hpaModified = false
 	p.connectStrings = make(types.ConnectStrings)
 	// Reset registry HPA scale down whether an error occurs or not
 	defer p.resetRegistryHPA(ctx)
@@ -254,11 +255,6 @@ func (p *Packager) deployInitComponent(ctx context.Context, component types.Zarf
 		return nil, nil
 	}
 
-	if isRegistry {
-		// If we are deploying the registry then mark the HPA as "modified" to set it to Min later
-		p.hpaModified = true
-	}
-
 	// Before deploying the seed registry, start the injector
 	if isSeedRegistry {
 		err := p.cluster.StartInjection(ctx, p.layout.Base, p.layout.Images.Base, component.Images)
@@ -308,11 +304,10 @@ func (p *Packager) deployComponent(ctx context.Context, component types.ZarfComp
 		}
 
 		// Disable the registry HPA scale down if we are deploying images and it is not already disabled
-		if hasImages && !p.hpaModified && p.state.RegistryInfo.InternalRegistry {
-			if err := p.cluster.DisableRegHPAScaleDown(ctx); err != nil {
-				message.Debugf("unable to disable the registry HPA scale down: %s", err.Error())
-			} else {
-				p.hpaModified = true
+		if hasImages && p.state.RegistryInfo.InternalRegistry {
+			err := p.cluster.DisableRegHPAScaleDown(ctx)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
