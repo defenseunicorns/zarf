@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zarf-dev/zarf/src/config"
 	"github.com/zarf-dev/zarf/src/config/lang"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
@@ -39,6 +40,8 @@ import (
 //
 // Forked from https://github.com/sigstore/cosign/blob/v1.7.1/pkg/sget/sget.go
 func Sget(ctx context.Context, image, key string, out io.Writer) error {
+	log := logging.FromContextOrDiscard(ctx)
+
 	message.Warnf(lang.WarnSGetDeprecation)
 
 	// If this is a DefenseUnicorns package, use an internal sget public key
@@ -139,11 +142,11 @@ func Sget(ctx context.Context, image, key string, out io.Writer) error {
 
 	for _, sig := range sp {
 		if cert, err := sig.Cert(); err == nil && cert != nil {
-			message.Debugf("Certificate subject: %s", cert.Subject)
+			log.Info("Certificate subject", "subject", cert.Subject)
 
 			ce := cosign.CertExtensions{Cert: cert}
 			if issuerURL := ce.GetIssuer(); issuerURL != "" {
-				message.Debugf("Certificate issuer URL: %s", issuerURL)
+				log.Debug("Certificate issues", "url", issuerURL)
 			}
 		}
 
@@ -152,7 +155,7 @@ func Sget(ctx context.Context, image, key string, out io.Writer) error {
 			spinner.Errorf(err, "Error getting payload")
 			return err
 		}
-		message.Debug(string(p))
+		log.Debug(string(p))
 	}
 
 	// TODO(mattmoor): Depending on what this is, use the higher-level stuff.

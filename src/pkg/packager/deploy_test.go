@@ -10,6 +10,7 @@ import (
 	"github.com/zarf-dev/zarf/src/api/v1alpha1"
 	"github.com/zarf-dev/zarf/src/pkg/packager/sources"
 	"github.com/zarf-dev/zarf/src/pkg/variables"
+	"github.com/zarf-dev/zarf/src/test/testutil"
 	"github.com/zarf-dev/zarf/src/types"
 )
 
@@ -213,7 +214,7 @@ func TestGenerateValuesOverrides(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := New(&types.PackagerConfig{DeployOpts: tt.deployOpts}, WithSource(&sources.TarballSource{}))
+			p, err := New(testutil.TestContext(t), &types.PackagerConfig{DeployOpts: tt.deployOpts}, WithSource(&sources.TarballSource{}))
 			require.NoError(t, err)
 			for k, v := range tt.setVariables {
 				p.variableConfig.SetVariable(k, v, false, false, variables.RawVariableType)

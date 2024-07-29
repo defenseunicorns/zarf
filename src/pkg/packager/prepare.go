@@ -23,6 +23,7 @@ import (
 	"github.com/zarf-dev/zarf/src/internal/packager/images"
 	"github.com/zarf-dev/zarf/src/internal/packager/kustomize"
 	"github.com/zarf-dev/zarf/src/pkg/layout"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	"github.com/zarf-dev/zarf/src/pkg/packager/creator"
 	"github.com/zarf-dev/zarf/src/pkg/utils"
@@ -75,6 +76,8 @@ func (p *Packager) FindImages(ctx context.Context) (map[string][]string, error) 
 }
 
 func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, err error) {
+	log := logging.FromContextOrDiscard(ctx)
+
 	repoHelmChartPath := p.cfg.FindImagesOpts.RepoHelmChartPath
 	kubeVersionOverride := p.cfg.FindImagesOpts.KubeVersionOverride
 	whyImage := p.cfg.FindImagesOpts.Why
@@ -157,7 +160,7 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 		if err != nil {
 			return nil, err
 		}
-		err = p.populateComponentAndStateTemplates(component.Name)
+		err = p.populateComponentAndStateTemplates(ctx, component.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -275,7 +278,7 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 		defer spinner.Stop()
 
 		for _, resource := range resources {
-			if matchedImages, maybeImages, err = p.processUnstructuredImages(resource, matchedImages, maybeImages); err != nil {
+			if matchedImages, maybeImages, err = p.processUnstructuredImages(ctx, resource, matchedImages, maybeImages); err != nil {
 				message.WarnErrf(err, "Problem processing K8s resource %s", resource.GetName())
 			}
 		}
@@ -296,10 +299,10 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 			for _, image := range sortedImages {
 				if descriptor, err := crane.Head(image, images.WithGlobalInsecureFlag()...); err != nil {
 					// Test if this is a real image, if not just quiet log to debug, this is normal
-					message.Debugf("Suspected image does not appear to be valid: %#v", err)
+					log.Error("Suspected image does not appear to be valid", "error", err)
 				} else {
 					// Otherwise, add to the list of images
-					message.Debugf("Imaged digest found: %s", descriptor.Digest)
+					log.Debug("Image digest found", "digest", descriptor.Digest)
 					validImages = append(validImages, image)
 				}
 			}
@@ -371,7 +374,9 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 	return imagesMap, nil
 }
 
-func (p *Packager) processUnstructuredImages(resource *unstructured.Unstructured, matchedImages, maybeImages imageMap) (imageMap, imageMap, error) {
+func (p *Packager) processUnstructuredImages(ctx context.Context, resource *unstructured.Unstructured, matchedImages, maybeImages imageMap) (imageMap, imageMap, error) {
+	log := logging.FromContextOrDiscard(ctx)
+
 	var imageSanityCheck = regexp.MustCompile(`(?mi)"image":"([^"]+)"`)
 	var imageFuzzyCheck = regexp.MustCompile(`(?mi)["|=]([a-z0-9\-.\/:]+:[\w.\-]*[a-z\.\-][\w.\-]*)"`)
 	var json string
@@ -420,7 +425,7 @@ func (p *Packager) processUnstructuredImages(resource *unstructured.Unstructured
 		// Capture any custom images
 		matches := imageSanityCheck.FindAllStringSubmatch(json, -1)
 		for _, group := range matches {
-			message.Debugf("Found unknown match, Kind: %s, Value: %s", resource.GetKind(), group[1])
+			log.Debug("Found unknown match", "kind", resource.GetKind(), "value", group[1])
 			matchedImages[group[1]] = true
 		}
 	}
@@ -428,7 +433,7 @@ func (p *Packager) processUnstructuredImages(resource *unstructured.Unstructured
 	// Capture "maybe images" too for all kinds because they might be in unexpected places.... 👀
 	matches := imageFuzzyCheck.FindAllStringSubmatch(json, -1)
 	for _, group := range matches {
-		message.Debugf("Found possible fuzzy match, Kind: %s, Value: %s", resource.GetKind(), group[1])
+		log.Debug("FOund possible fuzzy match", "kind", resource.GetKind(), "group", group[1])
 		maybeImages[group[1]] = true
 	}
 
