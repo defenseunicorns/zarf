@@ -153,11 +153,7 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 			return fmt.Errorf("unable get default Zarf service account: %w", err)
 		}
 
-		err = initOptions.GitServer.FillInEmptyValues()
-		if err != nil {
-			return err
-		}
-		state.GitServer = initOptions.GitServer
+		state.GitServer = initOptions.GitServer.FillInEmptyPullValues()
 		err = initOptions.RegistryInfo.FillInEmptyValues()
 		if err != nil {
 			return err
