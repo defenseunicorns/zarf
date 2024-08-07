@@ -41,6 +41,8 @@ type imageMap map[string]bool
 
 // FindImages iterates over a Zarf.yaml and attempts to parse any images.
 func (p *Packager) FindImages(ctx context.Context) (map[string][]string, error) {
+	log := logging.FromContextOrDiscard(ctx)
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -48,7 +50,7 @@ func (p *Packager) FindImages(ctx context.Context) (map[string][]string, error) 
 	defer func() {
 		// Return to the original working directory
 		if err := os.Chdir(cwd); err != nil {
-			message.Warnf("Unable to return to the original working directory: %s", err.Error())
+			log.Warn("Unable to return the original working directory", "error", err)
 		}
 	}()
 	if err := os.Chdir(p.cfg.CreateOpts.BaseDir); err != nil {
@@ -69,7 +71,7 @@ func (p *Packager) FindImages(ctx context.Context) (map[string][]string, error) 
 	p.cfg.Pkg = pkg
 
 	for _, warning := range warnings {
-		message.Warn(warning)
+		log.Warn(warning)
 	}
 
 	return p.findImages(ctx)
@@ -132,7 +134,7 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 			for _, repo := range component.Repos {
 				matches := strings.Split(repo, "@")
 				if len(matches) < 2 {
-					message.Warnf("Cannot convert git repo %s to helm chart without a version tag", repo)
+					log.Warn("Cannot convert Git repository to Helm chart without version tag", "repository", repo)
 					continue
 				}
 
@@ -350,7 +352,7 @@ func (p *Packager) findImages(ctx context.Context) (imgMap map[string][]string, 
 
 	if whyImage != "" {
 		if len(whyResources) == 0 {
-			message.Warnf("image %q not found in any charts or manifests", whyImage)
+			log.Warn("image not found in any charts or manifests", "image", whyImage)
 		}
 		return nil, nil
 	}

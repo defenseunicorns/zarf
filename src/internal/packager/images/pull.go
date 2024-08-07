@@ -34,6 +34,7 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/zarf-dev/zarf/src/config"
 	"github.com/zarf-dev/zarf/src/pkg/layout"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	"github.com/zarf-dev/zarf/src/pkg/transform"
 	"github.com/zarf-dev/zarf/src/pkg/utils"
@@ -42,6 +43,8 @@ import (
 
 // Pull pulls all of the images from the given config.
 func Pull(ctx context.Context, cfg PullConfig) (map[transform.Image]v1.Image, error) {
+	log := logging.FromContextOrDiscard(ctx)
+
 	var longer string
 	imageCount := len(cfg.ImageList)
 	// Give some additional user feedback on larger image sets
@@ -110,7 +113,7 @@ func Pull(ctx context.Context, cfg PullConfig) (map[transform.Image]v1.Image, er
 						return fmt.Errorf("rate limited by registry: %w", err)
 					}
 
-					message.Warnf("Falling back to local 'docker', failed to find the manifest on a remote: %s", err.Error())
+					log.Warn("Falling back to local 'docker', failed to find the manifest on a remote", "error", err.Error())
 
 					// Attempt to connect to the local docker daemon.
 					cli, err := client.NewClientWithOpts(client.FromEnv)
@@ -127,9 +130,7 @@ func Pull(ctx context.Context, cfg PullConfig) (map[transform.Image]v1.Image, er
 
 					// Warn the user if the image is large.
 					if rawImg.Size > 750*1000*1000 {
-						message.Warnf("%s is %s and may take a very long time to load via docker. "+
-							"See https://docs.zarf.dev/faq for suggestions on how to improve large local image loading operations.",
-							ref, utils.ByteFormat(float64(rawImg.Size), 2))
+						log.Warn("Image is large and may yake a long time to load via docker. See https://docs.zarf.dev/faq for suggestions on how to improve large local image loading operations.", "image", ref, "size", utils.ByteFormat(float64(rawImg.Size), 2))
 					}
 
 					// Use unbuffered opener to avoid OOM Kill issues https://github.com/zarf-dev/zarf/issues/1214.
@@ -147,7 +148,7 @@ func Pull(ctx context.Context, cfg PullConfig) (map[transform.Image]v1.Image, er
 			}
 
 			if refInfo.Digest != "" && desc != nil && types.MediaType(desc.MediaType).IsIndex() {
-				message.Warn("Zarf does not currently support direct consumption of OCI image indexes or Docker manifest lists")
+				log.Warn("Zarf does not currently support direct consumption of OCI image indexes or Docker manifest lists")
 
 				var idx v1.IndexManifest
 				if err := json.Unmarshal(desc.Manifest, &idx); err != nil {
@@ -161,7 +162,7 @@ func Pull(ctx context.Context, cfg PullConfig) (map[transform.Image]v1.Image, er
 				for _, desc := range idx.Manifests {
 					lines = append(lines, fmt.Sprintf("\n(%s) %s@%s", desc.Platform, name, desc.Digest))
 				}
-				message.Warn(strings.Join(lines, "\n"))
+				log.Warn(strings.Join(lines, "\n"))
 				return fmt.Errorf("%s resolved to an index, please select a specific platform to use", refInfo.Reference)
 			}
 

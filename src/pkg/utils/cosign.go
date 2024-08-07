@@ -17,7 +17,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
 	"github.com/zarf-dev/zarf/src/config"
-	"github.com/zarf-dev/zarf/src/config/lang"
 	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 
@@ -42,7 +41,7 @@ import (
 func Sget(ctx context.Context, image, key string, out io.Writer) error {
 	log := logging.FromContextOrDiscard(ctx)
 
-	message.Warnf(lang.WarnSGetDeprecation)
+	logging.FromContextOrDiscard(ctx).Warn("Using sget to download resources is being deprecated and will removed in the v1.0.0 release of Zarf. Please publish the packages as OCI artifacts instead.")
 
 	// If this is a DefenseUnicorns package, use an internal sget public key
 	if strings.HasPrefix(image, fmt.Sprintf("%s://defenseunicorns", helpers.SGETURLScheme)) {

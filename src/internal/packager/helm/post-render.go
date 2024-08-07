@@ -142,7 +142,7 @@ func (r *renderer) adoptAndUpdateNamespaces(ctx context.Context) error {
 			// Refuse to adopt namespace if it is one of four initial Kubernetes namespaces.
 			// https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/#initial-namespaces
 			if slices.Contains([]string{"default", "kube-node-lease", "kube-public", "kube-system"}, name) {
-				message.Warnf("Refusing to adopt the initial namespace: %s", name)
+				logging.FromContextOrDiscard(ctx).Warn("Refusing to adopt the initial namespace", "namespace", name)
 			} else {
 				// This is an existing namespace to adopt
 				_, err := c.Clientset.CoreV1().Namespaces().Update(ctx, namespace, metav1.UpdateOptions{})
