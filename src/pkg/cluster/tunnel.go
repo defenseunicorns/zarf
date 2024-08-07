@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/transport/spdy"
 
 	"github.com/defenseunicorns/pkg/helpers/v2"
-	"github.com/zarf-dev/zarf/src/pkg/message"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/types"
 )
 
@@ -218,8 +218,6 @@ func (c *Cluster) checkForZarfConnectLabel(ctx context.Context, name string) (Tu
 
 		// Add the url suffix too.
 		zt.urlSuffix = svc.Annotations[ZarfConnectAnnotationURL]
-
-		message.Debugf("tunnel connection match: %s/%s on port %d", svc.Namespace, svc.Name, zt.RemotePort)
 	} else {
 		return zt, fmt.Errorf("no matching services found for %s", name)
 	}
@@ -365,8 +363,7 @@ func (tunnel *Tunnel) Connect(ctx context.Context) (string, error) {
 
 		// Otherwise, retry the connection but delay increasing intervals between attempts.
 		delay := tunnel.attempt * 10
-		message.Debugf("%s", err.Error())
-		message.Debugf("Delay creating tunnel, waiting %d seconds...", delay)
+		logging.FromContextOrDiscard(ctx).Debug("failed to create tunnel, retrying after delay", "delay", delay, "error", err)
 
 		timer := time.NewTimer(0)
 		defer timer.Stop()
@@ -414,6 +411,8 @@ func (tunnel *Tunnel) Close() {
 
 // establish opens a tunnel to a kubernetes resource, as specified by the provided tunnel struct.
 func (tunnel *Tunnel) establish(ctx context.Context) (string, error) {
+	log := logging.FromContextOrDiscard(ctx)
+
 	var err error
 
 	// Track this locally as we may need to retry if the tunnel fails.
@@ -426,12 +425,12 @@ func (tunnel *Tunnel) establish(ctx context.Context) (string, error) {
 	// since there is a brief moment between `GetAvailablePort` and `forwarder.ForwardPorts` where the selected port
 	// is available for selection again.
 	if localPort == 0 {
-		message.Debugf("Requested local port is 0. Selecting an open port on host system")
+		log.Debug("requested local port is 0, selection an open port on host system")
 		localPort, err = helpers.GetAvailablePort()
 		if err != nil {
 			return "", fmt.Errorf("unable to find an available port: %w", err)
 		}
-		message.Debugf("Selected port %d", localPort)
+		log.Debug("selected port", "port", localPort)
 		globalMutex.Lock()
 		defer globalMutex.Unlock()
 	}
@@ -443,14 +442,14 @@ func (tunnel *Tunnel) establish(ctx context.Context) (string, error) {
 		tunnel.resourceName,
 		tunnel.namespace,
 	)
-	message.Debugf(msg)
+	log.Debug(msg)
 
 	// Find the pod to port forward to
 	podName, err := tunnel.getAttachablePodForResource(ctx)
 	if err != nil {
 		return "", fmt.Errorf("unable to find pod attached to given resource: %w", err)
 	}
-	message.Debugf("Selected pod %s to open port forward to", podName)
+	log.Debug("selected pod to open port forward to", "pod", podName)
 
 	// Build url to the port forward endpoint.
 	// Example: http://localhost:8080/api/v1/namespaces/helm/pods/tiller-deploy-9itlq/portforward.
@@ -463,7 +462,7 @@ func (tunnel *Tunnel) establish(ctx context.Context) (string, error) {
 		SubResource("portforward").
 		URL()
 
-	message.Debugf("Using URL %s to create portforward", portForwardCreateURL)
+	log.Debug("using URL to create port forward", "url", portForwardCreateURL)
 
 	// Construct the spdy client required by the client-go portforward library.
 	transport, upgrader, err := spdy.RoundTripperFor(tunnel.restConfig)
@@ -498,7 +497,7 @@ func (tunnel *Tunnel) establish(ctx context.Context) (string, error) {
 		// Store the error channel to listen for errors
 		tunnel.errChan = errChan
 
-		message.Debugf("Creating port forwarding tunnel at %s", url)
+		log.Debug("creation for forwarding tunnel", "url", url)
 		return url, nil
 	}
 }

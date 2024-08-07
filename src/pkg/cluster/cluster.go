@@ -18,6 +18,7 @@ import (
 
 	pkgkubernetes "github.com/defenseunicorns/pkg/kubernetes"
 
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 )
 
@@ -80,6 +81,8 @@ func NewCluster() (*Cluster, error) {
 
 // WaitForHealthyCluster checks for an available K8s cluster every second until timeout.
 func waitForHealthyCluster(ctx context.Context, client kubernetes.Interface) error {
+	log := logging.FromContextOrDiscard(ctx)
+
 	const waitDuration = 1 * time.Second
 
 	timer := time.NewTimer(0)
@@ -93,7 +96,7 @@ func waitForHealthyCluster(ctx context.Context, client kubernetes.Interface) err
 			// Make sure there is at least one running Node
 			nodeList, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 			if err != nil || len(nodeList.Items) < 1 {
-				message.Debugf("No nodes reporting healthy yet: %v\n", err)
+				log.Debug("no nodes reporting healthy yet", "error", err)
 				timer.Reset(waitDuration)
 				continue
 			}
@@ -101,7 +104,7 @@ func waitForHealthyCluster(ctx context.Context, client kubernetes.Interface) err
 			// Get the cluster pod list
 			pods, err := client.CoreV1().Pods(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
 			if err != nil {
-				message.Debugf("Could not get the pod list: %v", err)
+				log.Debug("could not get the pod list", "error", err)
 				timer.Reset(waitDuration)
 				continue
 			}
@@ -113,7 +116,7 @@ func waitForHealthyCluster(ctx context.Context, client kubernetes.Interface) err
 				}
 			}
 
-			message.Debug("No pods reported 'succeeded' or 'running' state yet.")
+			log.Debug("No pods are in succeeded or running state yet")
 			timer.Reset(waitDuration)
 		}
 	}

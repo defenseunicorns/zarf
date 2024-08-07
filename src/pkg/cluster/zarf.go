@@ -19,6 +19,7 @@ import (
 
 	"github.com/zarf-dev/zarf/src/api/v1alpha1"
 	"github.com/zarf-dev/zarf/src/config"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	"github.com/zarf-dev/zarf/src/types"
 )
@@ -187,7 +188,7 @@ func (c *Cluster) RecordPackageDeployment(ctx context.Context, pkg v1alpha1.Zarf
 	var componentWebhooks map[string]map[string]types.Webhook
 	existingPackageSecret, err := c.GetDeployedPackage(ctx, packageName)
 	if err != nil {
-		message.Debugf("Unable to fetch existing secret for package '%s': %s", packageName, err.Error())
+		logging.FromContextOrDiscard(ctx).Debug("unable to fetch existing secret for package", "package", packageName, "error", err)
 	}
 	if existingPackageSecret != nil {
 		componentWebhooks = existingPackageSecret.ComponentWebhooks
