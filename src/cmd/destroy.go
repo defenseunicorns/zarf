@@ -11,15 +11,17 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/spf13/cobra"
+
 	"github.com/defenseunicorns/pkg/helpers/v2"
+
 	"github.com/zarf-dev/zarf/src/config"
 	"github.com/zarf-dev/zarf/src/config/lang"
 	"github.com/zarf-dev/zarf/src/internal/packager/helm"
 	"github.com/zarf-dev/zarf/src/pkg/cluster"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	"github.com/zarf-dev/zarf/src/pkg/utils/exec"
-
-	"github.com/spf13/cobra"
 )
 
 var confirmDestroy bool
@@ -63,7 +65,7 @@ var destroyCmd = &cobra.Command{
 				// Run the matched script
 				err := exec.CmdWithPrint(script)
 				if errors.Is(err, os.ErrPermission) {
-					message.Warnf(lang.CmdDestroyErrScriptPermissionDenied, script)
+					logging.FromContextOrDiscard(cmd.Context()).Warn("Received 'permission denied' when trying to execute the script (%s). Please double-check you have the correct kube-context.", "script", script)
 
 					// Don't remove scripts we can't execute so the user can try to manually run
 					continue

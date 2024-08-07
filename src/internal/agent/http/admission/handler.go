@@ -7,6 +7,7 @@
 package admission
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/zarf-dev/zarf/src/config/lang"
 	"github.com/zarf-dev/zarf/src/internal/agent/operations"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	corev1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +36,7 @@ func NewHandler() *Handler {
 }
 
 // Serve returns an http.HandlerFunc for an admission webhook.
-func (h *Handler) Serve(hook operations.Hook) http.HandlerFunc {
+func (h *Handler) Serve(ctx context.Context, hook operations.Hook) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method != http.MethodPost {
@@ -70,7 +72,7 @@ func (h *Handler) Serve(hook operations.Hook) http.HandlerFunc {
 			Kind:       "AdmissionReview",
 		}
 		if err != nil {
-			message.Warnf("%s: %s", lang.AgentErrBindHandler, err.Error())
+			logging.FromContextOrDiscard(ctx).Warn("Unable to bind the webhook handler", "error", err)
 			admissionResponse := corev1.AdmissionReview{
 				TypeMeta: admissionMeta,
 				Response: &corev1.AdmissionResponse{

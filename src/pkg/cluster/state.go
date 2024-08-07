@@ -19,6 +19,7 @@ import (
 	"github.com/defenseunicorns/pkg/helpers/v2"
 	"github.com/zarf-dev/zarf/src/config"
 	"github.com/zarf-dev/zarf/src/config/lang"
+	"github.com/zarf-dev/zarf/src/pkg/logging"
 	"github.com/zarf-dev/zarf/src/pkg/message"
 	"github.com/zarf-dev/zarf/src/pkg/pki"
 	"github.com/zarf-dev/zarf/src/types"
@@ -35,6 +36,8 @@ const (
 
 // InitZarfState initializes the Zarf state with the given temporary directory and init configs.
 func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitOptions) error {
+	log := logging.FromContextOrDiscard(ctx)
+
 	spinner := message.NewProgressSpinner("Gathering cluster state information")
 	defer spinner.Stop()
 
@@ -141,7 +144,7 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 						return err
 					}
 					if kerrors.IsNotFound(err) {
-						message.Debug("Service account %s/%s not found, retrying...", ns, name)
+						log.Debug("Service account not found, retrying", "namespace", ns, "name", name)
 						timer.Reset(1 * time.Second)
 						continue
 					}
@@ -167,16 +170,13 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 		state.ArtifactServer = initOptions.ArtifactServer
 	} else {
 		if helpers.IsNotZeroAndNotEqual(initOptions.GitServer, state.GitServer) {
-			message.Warn("Detected a change in Git Server init options on a re-init. Ignoring... To update run:")
-			message.ZarfCommand("tools update-creds git")
+			log.Warn("Detected a change in Git Server init options on a re-init. Ignoring... To update run: zarf tools update-creds git")
 		}
 		if helpers.IsNotZeroAndNotEqual(initOptions.RegistryInfo, state.RegistryInfo) {
-			message.Warn("Detected a change in Image Registry init options on a re-init. Ignoring... To update run:")
-			message.ZarfCommand("tools update-creds registry")
+			log.Warn("Detected a change in Image Registry init options on a re-init. Ignoring... To update run: zarf tools update-creds registry")
 		}
 		if helpers.IsNotZeroAndNotEqual(initOptions.ArtifactServer, state.ArtifactServer) {
-			message.Warn("Detected a change in Artifact Server init options on a re-init. Ignoring... To update run:")
-			message.ZarfCommand("tools update-creds artifact")
+			log.Warn("Detected a change in Artifact Server init options on a re-init. Ignoring... To update run: zarf tools update-creds artifact")
 		}
 	}
 
@@ -216,7 +216,7 @@ func (c *Cluster) LoadZarfState(ctx context.Context) (state *types.ZarfState, er
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", stateErr, err)
 	}
-	c.debugPrintZarfState(state)
+	c.debugPrintZarfState(ctx, state)
 	return state, nil
 }
 
@@ -241,7 +241,7 @@ func (c *Cluster) sanitizeZarfState(state *types.ZarfState) *types.ZarfState {
 	return state
 }
 
-func (c *Cluster) debugPrintZarfState(state *types.ZarfState) {
+func (c *Cluster) debugPrintZarfState(ctx context.Context, state *types.ZarfState) {
 	if state == nil {
 		return
 	}
@@ -252,12 +252,12 @@ func (c *Cluster) debugPrintZarfState(state *types.ZarfState) {
 	if err != nil {
 		return
 	}
-	message.Debugf("ZarfState - %s", string(b))
+	logging.FromContextOrDiscard(ctx).Debug("ZarfState", "state", string(b))
 }
 
 // SaveZarfState takes a given state and persists it to the Zarf/zarf-state secret.
 func (c *Cluster) SaveZarfState(ctx context.Context, state *types.ZarfState) error {
-	c.debugPrintZarfState(state)
+	c.debugPrintZarfState(ctx, state)
 
 	data, err := json.Marshal(&state)
 	if err != nil {
