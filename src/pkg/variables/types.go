@@ -21,12 +21,6 @@ const (
 	FileVariableType VariableType = "file"
 )
 
-var (
-	// IsUppercaseNumberUnderscore is a regex for uppercase, numbers and underscores.
-	// https://regex101.com/r/tfsEuZ/1
-	IsUppercaseNumberUnderscore = regexp.MustCompile(`^[A-Z0-9_]+$`).MatchString
-)
-
 // Variable represents a variable that has a value set programmatically
 type Variable struct {
 	// The name to be used for the variable
